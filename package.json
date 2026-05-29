@@ -3,8 +3,12 @@
   "version": "0.1.0",
   "description": "MCP to allow agents interact with mite.de",
   "main": "dist/index.js",
+  "bin": {
+    "mite-mcp": "dist/index.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",
     "test": "vitest run",
@@ -17,10 +21,21 @@
     "type": "git",
     "url": "git+https://github.com/MichalOsadowski/mite-mcp.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "mite",
+    "time-tracking"
+  ],
+  "author": "Michał Osadowski",
   "license": "ISC",
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "bugs": {
     "url": "https://github.com/MichalOsadowski/mite-mcp/issues"
   },
@@ -31,12 +46,15 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
     "@types/node": "^25.9.1",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.6.2",
+    "semantic-release": "^24.2.9",
     "tsx": "^4.20.6",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.46.3",

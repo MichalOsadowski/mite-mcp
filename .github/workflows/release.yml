@@ -5,11 +5,13 @@ on:
     branches: [main]
 
 # semantic-release pushes the version-bump commit + tag, creates the GitHub
-# release, and comments on related issues/PRs.
+# release, and comments on related issues/PRs. `id-token: write` lets npm
+# authenticate to the registry via OIDC Trusted Publishing (no NPM_TOKEN).
 permissions:
   contents: write
   issues: write
   pull-requests: write
+  id-token: write
 
 concurrency:
   group: release
@@ -19,14 +21,15 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # semantic-release needs the full history and tags to compute the bump.
           fetch-depth: 0
           persist-credentials: true
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: 20
+          # Node 24 (latest LTS) ships npm 11.x, which supports OIDC publishing.
+          node-version: 24
           cache: npm
       - run: npm ci
       # Gate the release on the same checks CI runs.
@@ -38,4 +41,3 @@ jobs:
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

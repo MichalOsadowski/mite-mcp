@@ -14,7 +14,12 @@ const storeWith = (
   });
 
 const depsWith = (store: ReturnType<typeof storeWith>) => ({
-  getClient: () => ({ get: vi.fn(), post: vi.fn() }),
+  getClient: () => ({
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  }),
   getDefaults: () => store,
 });
 

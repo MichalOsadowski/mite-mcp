@@ -11,7 +11,7 @@ import type { DefaultsStore } from "../mite/defaults.js";
  * fake store without touching the real `~/.config` or real git.
  */
 export interface ToolDeps {
-  getClient: () => Pick<MiteClient, "get" | "post">;
+  getClient: () => Pick<MiteClient, "get" | "post" | "patch" | "delete">;
   getDefaults: () => DefaultsStore;
 }
 

@@ -22,7 +22,12 @@ describe("listDefaults", () => {
     const result = await listDefaults(
       {},
       {
-        getClient: () => ({ get: vi.fn(), post: vi.fn() }),
+        getClient: () => ({
+          get: vi.fn(),
+          post: vi.fn(),
+          patch: vi.fn(),
+          delete: vi.fn(),
+        }),
         getDefaults: () => store,
       },
     );

@@ -3,6 +3,7 @@ import { tools as lookupTools } from "./lookup/index.js";
 import { tools as pingTools } from "./ping/index.js";
 import { tools as reportTools } from "./reports/index.js";
 import { tools as timeEntriesTools } from "./time-entries/index.js";
+import { tools as trackerTools } from "./tracker/index.js";
 import { tools as whoamiTools } from "./whoami/index.js";
 
 import type { ToolDefinition } from "./types.js";
@@ -17,6 +18,7 @@ export const tools: ToolDefinition[] = [
   ...whoamiTools,
   ...reportTools,
   ...timeEntriesTools,
+  ...trackerTools,
   ...lookupTools,
   ...defaultsTools,
 ];

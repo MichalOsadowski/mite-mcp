@@ -16,7 +16,12 @@ const storeAt = (baseDir: string, gitRoot: string | null) =>
   });
 
 const depsWith = (store: ReturnType<typeof storeAt>) => ({
-  getClient: () => ({ get: vi.fn(), post: vi.fn() }),
+  getClient: () => ({
+    get: vi.fn(),
+    post: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+  }),
   getDefaults: () => store,
 });
 

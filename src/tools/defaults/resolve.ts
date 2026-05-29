@@ -58,3 +58,28 @@ export const noScopeResponse = async (
     "in your .mcp.json, run inside a git repository, or pass an explicit scope.",
   existing_scopes: Object.keys(await deps.getDefaults().list()),
 });
+
+export interface NoDefaultResponse {
+  ok: false;
+  reason: "no_default";
+  message: string;
+  existing_scopes: string[];
+}
+
+/**
+ * The structured, actionable response when create is missing ids and no default
+ * exists for the resolved scope (or no scope resolved at all). It names the
+ * scopes that DO exist and points at set_default — not an error dump. Returned
+ * as data so it surfaces through register.ts like a normal result.
+ */
+export const noDefaultResponse = async (
+  deps: ToolDeps,
+): Promise<NoDefaultResponse> => ({
+  ok: false,
+  reason: "no_default",
+  message:
+    "No default project/service is set for this scope, and project_id/" +
+    "service_id were not provided. Set one with set_default, or pass the ids " +
+    "explicitly.",
+  existing_scopes: Object.keys(await deps.getDefaults().list()),
+});

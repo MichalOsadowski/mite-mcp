@@ -122,6 +122,40 @@ export class MiteClient {
     return this.validate(response, schema);
   }
 
+  /**
+   * Bodyless write seam for the tracker: PATCH starts the timer against an
+   * existing entry (`/tracker/:id.json`). mite carries the id in the path and
+   * needs no body, so this mirrors `get`'s `(path, schema)` shape rather than
+   * `post`'s. Non-OK statuses map through `mapError`; the response validates
+   * through the same zod seam.
+   */
+  async patch<S extends ZodType>(path: string, schema: S): Promise<zInfer<S>> {
+    const response = await this.fetchFn(`${this.baseUrl}${path}`, {
+      method: "PATCH",
+      headers: {
+        "X-MiteApiKey": this.apiKey,
+        Accept: "application/json",
+      },
+    });
+    return this.validate(response, schema);
+  }
+
+  /**
+   * Bodyless write seam for the tracker: DELETE stops the timer on an existing
+   * entry (`/tracker/:id.json`). Like `patch`, the id is in the path and there
+   * is no body. Named `del` because `delete` is a reserved word.
+   */
+  async del<S extends ZodType>(path: string, schema: S): Promise<zInfer<S>> {
+    const response = await this.fetchFn(`${this.baseUrl}${path}`, {
+      method: "DELETE",
+      headers: {
+        "X-MiteApiKey": this.apiKey,
+        Accept: "application/json",
+      },
+    });
+    return this.validate(response, schema);
+  }
+
   private async validate<S extends ZodType>(
     response: Response,
     schema: S,

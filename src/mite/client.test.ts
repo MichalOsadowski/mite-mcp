@@ -98,6 +98,106 @@ describe("MiteClient.post", () => {
   });
 });
 
+describe("MiteClient.patch", () => {
+  it("PATCHes with X-MiteApiKey and no body, then returns parsed JSON", async () => {
+    const fetchFn = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({ tracker: { tracking_time_entry: { id: 7 } } }),
+          { status: 200 },
+        ),
+    );
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn,
+    });
+
+    const schema = z.looseObject({
+      tracker: z.looseObject({
+        tracking_time_entry: z.looseObject({ id: z.number() }),
+      }),
+    });
+    const result = await client.patch("/tracker/7.json", schema);
+
+    expect(result).toEqual({ tracker: { tracking_time_entry: { id: 7 } } });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe("https://acme.mite.de/tracker/7.json");
+    expect(init?.method).toBe("PATCH");
+    expect((init?.headers as Record<string, string>)["X-MiteApiKey"]).toBe(
+      "secret-key",
+    );
+    expect(init?.body).toBeUndefined();
+  });
+
+  it("maps a non-OK status through mapError without leaking the body", async () => {
+    const SENTINEL = "RAW_UPSTREAM_SECRET_BODY";
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(404, SENTINEL),
+    });
+
+    const error = (await client
+      .patch("/tracker/7.json", z.unknown())
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error).toBeInstanceOf(MiteApiError);
+    expect(error.kind).toBe("not_found");
+    expect(error.message).not.toContain(SENTINEL);
+  });
+});
+
+describe("MiteClient.del", () => {
+  it("DELETEs with X-MiteApiKey and no body, then returns parsed JSON", async () => {
+    const fetchFn = vi.fn<typeof fetch>(
+      async () =>
+        new Response(
+          JSON.stringify({ tracker: { stopped_time_entry: { id: 7 } } }),
+          { status: 200 },
+        ),
+    );
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn,
+    });
+
+    const schema = z.looseObject({
+      tracker: z.looseObject({
+        stopped_time_entry: z.looseObject({ id: z.number() }),
+      }),
+    });
+    const result = await client.del("/tracker/7.json", schema);
+
+    expect(result).toEqual({ tracker: { stopped_time_entry: { id: 7 } } });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe("https://acme.mite.de/tracker/7.json");
+    expect(init?.method).toBe("DELETE");
+    expect((init?.headers as Record<string, string>)["X-MiteApiKey"]).toBe(
+      "secret-key",
+    );
+    expect(init?.body).toBeUndefined();
+  });
+
+  it("maps a non-OK status through mapError without leaking the body", async () => {
+    const SENTINEL = "RAW_UPSTREAM_SECRET_BODY";
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(500, SENTINEL),
+    });
+
+    const error = (await client
+      .del("/tracker/7.json", z.unknown())
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error).toBeInstanceOf(MiteApiError);
+    expect(error.kind).toBe("server");
+    expect(error.message).not.toContain(SENTINEL);
+  });
+});
+
 describe("MiteClient.fromEnv", () => {
   it("builds a client from MITE_ACCOUNT and MITE_API_KEY", async () => {
     const fetchFn = vi.fn<typeof fetch>(

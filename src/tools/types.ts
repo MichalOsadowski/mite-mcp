@@ -7,7 +7,7 @@ import type { MiteClient } from "../mite/client.js";
  * credential-free tools (ping) never trigger client construction.
  */
 export interface ToolDeps {
-  getClient: () => Pick<MiteClient, "get" | "post">;
+  getClient: () => Pick<MiteClient, "get" | "post" | "patch" | "del">;
 }
 
 /**

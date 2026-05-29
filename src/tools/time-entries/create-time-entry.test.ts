@@ -1,9 +1,40 @@
-import { describe, expect, it, vi } from "vitest";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { createDefaultsStore } from "../../mite/defaults.js";
 import { createTimeEntry } from "./create-time-entry.tool.js";
 
 type Post = (path: string, body: unknown) => Promise<unknown>;
 const postFn = (impl: Post) => vi.fn<Post>(impl);
+
+let defaultsBaseDir: string;
+beforeEach(() => {
+  defaultsBaseDir = mkdtempSync(join(tmpdir(), "mite-create-"));
+});
+afterEach(() => {
+  rmSync(defaultsBaseDir, { recursive: true, force: true });
+});
+
+/** A real (temp-dir-backed) store whose scope resolves to a fixed git root. */
+const storeWith = (gitRoot: string | null = "/repos/web") =>
+  createDefaultsStore({
+    baseDir: defaultsBaseDir,
+    env: {},
+    readGitRemote: () => null,
+    readGitRoot: () => gitRoot,
+  });
+
+const depsWithStore = (
+  post: ReturnType<typeof vi.fn>,
+  store: ReturnType<typeof storeWith>,
+) =>
+  ({
+    getClient: () => ({ get: vi.fn(), post }),
+    getDefaults: () => store,
+  }) as never;
 
 const created = (overrides: Record<string, unknown> = {}) => ({
   time_entry: {
@@ -46,6 +77,7 @@ describe("createTimeEntry", () => {
         note: "work",
       },
     });
+    if (!("created" in result)) throw new Error("expected a created entry");
     expect(result.created).toBe(true);
     if (!result.created) throw new Error("expected a created entry");
     expect(result.entry).toMatchObject({
@@ -131,6 +163,7 @@ describe("createTimeEntry", () => {
     );
 
     expect(post).not.toHaveBeenCalled();
+    if (!("preview" in result)) throw new Error("expected a preview");
     expect(result.created).toBe(false);
     if (result.created) throw new Error("expected a preview");
     expect(result.preview).toMatchObject({
@@ -141,7 +174,7 @@ describe("createTimeEntry", () => {
     });
   });
 
-  it("accepts but ignores the reserved scope field", async () => {
+  it("never forwards the scope field into the mite payload", async () => {
     const post = postFn(async () => created());
 
     await createTimeEntry(
@@ -162,5 +195,81 @@ describe("createTimeEntry", () => {
       createTimeEntry({ project_id: 88309, service_id: 12984 }, depsWith(post)),
     ).rejects.toThrow(/minutes.*hours/i);
     expect(post).not.toHaveBeenCalled();
+  });
+
+  describe("with per-repo defaults", () => {
+    it("pulls project/service from the resolved default when both ids are omitted and echoes the names", async () => {
+      const post = postFn(async () => created());
+      const store = storeWith();
+      await store.set(undefined, { project_id: 88309, service_id: 12984 });
+
+      const result = await createTimeEntry(
+        { minutes: 90, note: "work" },
+        depsWithStore(post, store),
+      );
+
+      expect(post).toHaveBeenCalledTimes(1);
+      const body = post.mock.calls[0]![1] as {
+        time_entry: { project_id: number; service_id: number };
+      };
+      expect(body.time_entry.project_id).toBe(88309);
+      expect(body.time_entry.service_id).toBe(12984);
+      expect(result).toMatchObject({ created: true });
+      if (!("created" in result) || !result.created) {
+        throw new Error("expected a created entry");
+      }
+      expect(result.entry).toMatchObject({
+        project_name: "API Docs",
+        service_name: "Writing",
+      });
+    });
+
+    it("fills only the omitted id from the default when one is given explicitly", async () => {
+      const post = postFn(async () => created());
+      const store = storeWith();
+      await store.set(undefined, { project_id: 88309, service_id: 12984 });
+
+      await createTimeEntry(
+        { service_id: 555, minutes: 90 },
+        depsWithStore(post, store),
+      );
+
+      const body = post.mock.calls[0]![1] as {
+        time_entry: { project_id: number; service_id: number };
+      };
+      expect(body.time_entry.project_id).toBe(88309);
+      expect(body.time_entry.service_id).toBe(555);
+    });
+
+    it("returns a structured, actionable no-default response when ids are omitted and no default exists", async () => {
+      const post = postFn(async () => created());
+      const store = storeWith();
+      await store.set("other-repo", { project_id: 1, service_id: 2 });
+
+      const result = await createTimeEntry(
+        { minutes: 90 },
+        depsWithStore(post, store),
+      );
+
+      expect(post).not.toHaveBeenCalled();
+      expect(result).toMatchObject({ ok: false, reason: "no_default" });
+      if (!("ok" in result)) throw new Error("expected a no-default response");
+      expect(result.existing_scopes).toContain("other-repo");
+      expect(result.message).toMatch(/set_default/i);
+    });
+
+    it("does not consult the defaults store when both ids are given", async () => {
+      const post = postFn(async () => created());
+      const store = storeWith();
+      const getSpy = vi.spyOn(store, "get");
+
+      await createTimeEntry(
+        { project_id: 88309, service_id: 12984, minutes: 90 },
+        depsWithStore(post, store),
+      );
+
+      expect(getSpy).not.toHaveBeenCalled();
+      expect(post).toHaveBeenCalledTimes(1);
+    });
   });
 });

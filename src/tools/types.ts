@@ -1,13 +1,18 @@
 import type { ZodRawShape } from "zod/v4";
 
 import type { MiteClient } from "../mite/client.js";
+import type { DefaultsStore } from "../mite/defaults.js";
 
 /**
  * What a tool may reach for at run time. The client is resolved lazily so
- * credential-free tools (ping) never trigger client construction.
+ * credential-free tools (ping) never trigger client construction. The defaults
+ * store is a second seam (ADR-0005): the per-scope defaults tools and create's
+ * id-resolution reach it through `getDefaults`, so both stay testable against a
+ * fake store without touching the real `~/.config` or real git.
  */
 export interface ToolDeps {
   getClient: () => Pick<MiteClient, "get" | "post" | "patch" | "delete">;
+  getDefaults: () => DefaultsStore;
 }
 
 /**

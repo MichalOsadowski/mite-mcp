@@ -123,6 +123,14 @@ export const ProjectsResponse = z.array(z.looseObject({ project: Project }));
 export const ServicesResponse = z.array(z.looseObject({ service: Service }));
 export const CustomersResponse = z.array(z.looseObject({ customer: Customer }));
 
+/**
+ * Single-resource responses for by-id lookups (`/projects/{id}.json`,
+ * `/services/{id}.json`). `set_default` uses these to echo the resolved names
+ * for the ids it stores without creating a time entry.
+ */
+export const ProjectResponse = z.looseObject({ project: Project });
+export const ServiceResponse = z.looseObject({ service: Service });
+
 export type Project = z.infer<typeof Project>;
 export type Service = z.infer<typeof Service>;
 export type Customer = z.infer<typeof Customer>;

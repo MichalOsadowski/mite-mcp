@@ -5,10 +5,14 @@ import { ServicesResponse } from "../../mite/schemas.js";
 import type { ToolDefinition } from "../types.js";
 import { lookupResources } from "./lookup.js";
 
-export interface FindServiceInput {
-  name: string;
-  includeArchived?: boolean;
-}
+const FindServiceInput = z.object({
+  name: z.string().describe("Partial, case-insensitive service name."),
+  includeArchived: z
+    .boolean()
+    .optional()
+    .describe("Include archived services in the results."),
+});
+type FindServiceInput = z.infer<typeof FindServiceInput>;
 
 export interface ServiceCandidate {
   id: number;
@@ -31,18 +35,11 @@ export async function findService(
   }));
 }
 
-export const findServiceTool: ToolDefinition = {
+export const findServiceTool: ToolDefinition<FindServiceInput> = {
   name: "find_service",
   title: "Find service",
   description:
     "Resolve a service name to mite service IDs. Matches partially and case-insensitively; returns all candidates ({ id, name }). Archived services are excluded unless includeArchived is set.",
-  inputSchema: {
-    name: z.string().describe("Partial, case-insensitive service name."),
-    includeArchived: z
-      .boolean()
-      .optional()
-      .describe("Include archived services in the results."),
-  },
-  run: (input, deps) =>
-    findService(deps.getClient(), input as unknown as FindServiceInput),
+  inputSchema: FindServiceInput.shape,
+  run: (input, deps) => findService(deps.getClient(), input),
 };

@@ -5,10 +5,14 @@ import { CustomersResponse } from "../../mite/schemas.js";
 import type { ToolDefinition } from "../types.js";
 import { lookupResources } from "./lookup.js";
 
-export interface FindCustomerInput {
-  name: string;
-  includeArchived?: boolean;
-}
+const FindCustomerInput = z.object({
+  name: z.string().describe("Partial, case-insensitive customer name."),
+  includeArchived: z
+    .boolean()
+    .optional()
+    .describe("Include archived customers in the results."),
+});
+type FindCustomerInput = z.infer<typeof FindCustomerInput>;
 
 export interface CustomerCandidate {
   id: number;
@@ -31,18 +35,11 @@ export async function findCustomer(
   }));
 }
 
-export const findCustomerTool: ToolDefinition = {
+export const findCustomerTool: ToolDefinition<FindCustomerInput> = {
   name: "find_customer",
   title: "Find customer",
   description:
     "Resolve a customer name to mite customer IDs. Matches partially and case-insensitively; returns all candidates ({ id, name }). Archived customers are excluded unless includeArchived is set.",
-  inputSchema: {
-    name: z.string().describe("Partial, case-insensitive customer name."),
-    includeArchived: z
-      .boolean()
-      .optional()
-      .describe("Include archived customers in the results."),
-  },
-  run: (input, deps) =>
-    findCustomer(deps.getClient(), input as unknown as FindCustomerInput),
+  inputSchema: FindCustomerInput.shape,
+  run: (input, deps) => findCustomer(deps.getClient(), input),
 };

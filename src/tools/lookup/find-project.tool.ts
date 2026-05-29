@@ -5,11 +5,18 @@ import { ProjectsResponse } from "../../mite/schemas.js";
 import type { ToolDefinition } from "../types.js";
 import { lookupResources } from "./lookup.js";
 
-export interface FindProjectInput {
-  name: string;
-  includeArchived?: boolean;
-  customer_id?: number;
-}
+const FindProjectInput = z.object({
+  name: z.string().describe("Partial, case-insensitive project name."),
+  includeArchived: z
+    .boolean()
+    .optional()
+    .describe("Include archived projects in the results."),
+  customer_id: z
+    .number()
+    .optional()
+    .describe("Restrict results to projects belonging to this customer."),
+});
+type FindProjectInput = z.infer<typeof FindProjectInput>;
 
 export interface ProjectCandidate {
   id: number;
@@ -41,22 +48,11 @@ export async function findProject(
   }));
 }
 
-export const findProjectTool: ToolDefinition = {
+export const findProjectTool: ToolDefinition<FindProjectInput> = {
   name: "find_project",
   title: "Find project",
   description:
     "Resolve a project name to mite project IDs. Matches partially and case-insensitively; returns all candidates ({ id, name, customer_id, customer_name }). Archived projects are excluded unless includeArchived is set; pass customer_id to narrow to one customer's projects.",
-  inputSchema: {
-    name: z.string().describe("Partial, case-insensitive project name."),
-    includeArchived: z
-      .boolean()
-      .optional()
-      .describe("Include archived projects in the results."),
-    customer_id: z
-      .number()
-      .optional()
-      .describe("Restrict results to projects belonging to this customer."),
-  },
-  run: (input, deps) =>
-    findProject(deps.getClient(), input as unknown as FindProjectInput),
+  inputSchema: FindProjectInput.shape,
+  run: (input, deps) => findProject(deps.getClient(), input),
 };

@@ -1,7 +1,7 @@
 import * as z from "zod/v4";
 
 import { TimeEntryResponse } from "../../mite/schemas.js";
-import type { ToolDefinition, ToolDeps } from "../types.js";
+import type { ToolDefinition, ToolRun } from "../types.js";
 import { resolveMinutes, shapeEntry, type ShapedEntry } from "./entry.js";
 
 const CreateInput = z.object({
@@ -56,10 +56,10 @@ const buildPayload = (input: CreateInput): CreatePayload => {
   return payload;
 };
 
-export async function createTimeEntry(
-  input: CreateInput,
-  deps: ToolDeps,
-): Promise<CreateTimeEntryResult> {
+export const createTimeEntry: ToolRun<
+  CreateInput,
+  CreateTimeEntryResult
+> = async (input, deps) => {
   const payload = buildPayload(input);
 
   if (input.preview) {
@@ -73,7 +73,7 @@ export async function createTimeEntry(
     TimeEntryResponse,
   );
   return { created: true, entry: shapeEntry(time_entry) };
-}
+};
 
 export const createTimeEntryTool: ToolDefinition<CreateInput> = {
   name: "create_time_entry",

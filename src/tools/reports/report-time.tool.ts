@@ -1,8 +1,7 @@
 import * as z from "zod/v4";
 
-import type { MiteClient } from "../../mite/client.js";
 import { minutesToHours, passthroughDate } from "../../mite/format.js";
-import type { ToolDefinition } from "../types.js";
+import type { ToolDefinition, ToolRun } from "../types.js";
 
 /**
  * Permissive grouped-report schema. mite returns an array of envelopes, each a
@@ -56,10 +55,11 @@ export type ReportGroup = Record<string, unknown> & {
   revenue: number;
 };
 
-export async function reportTime(
-  input: ReportTimeInput,
-  client: Pick<MiteClient, "get">,
-): Promise<ReportGroup[]> {
+export const reportTime: ToolRun<ReportTimeInput, ReportGroup[]> = async (
+  input,
+  deps,
+) => {
+  const client = deps.getClient();
   const query = new URLSearchParams({ group_by: input.group_by });
   const filters: Record<string, string | undefined> = {
     at: passthroughDate(input.at),
@@ -90,7 +90,7 @@ export async function reportTime(
       revenue: time_entry_group.revenue,
     };
   });
-}
+};
 
 export const reportTimeTool: ToolDefinition<ReportTimeInput> = {
   name: "report_time",
@@ -102,5 +102,5 @@ export const reportTimeTool: ToolDefinition<ReportTimeInput> = {
     "minutes, hours, and revenue (revenue as computed by mite). This is the " +
     "only sanctioned way to total time; never sum individual entries.",
   inputSchema: ReportTimeInput.shape,
-  run: (input, deps) => reportTime(input, deps.getClient()),
+  run: reportTime,
 };

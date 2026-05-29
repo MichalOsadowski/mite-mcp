@@ -42,6 +42,12 @@ mite owns the rules; tools are a thin, uniform way to expose them.
 - **Dependencies are passed, resolved lazily.** The adapter hands `run` a `ToolDeps` whose
   `getClient()` is only called by tools that need mite — so credential-free tools (`ping`) keep the
   server starting without credentials.
+- **One canonical handler signature.** Every tool handler implements `ToolRun<I, O>` — `(input, deps)`,
+  resolving its client via `deps.getClient()` itself — and the definition wires it by reference
+  (`run: findService`), so argument order and client resolution are uniform across all tools.
+  `ToolDefinition.run` stays a method declaration (not a `ToolRun` property) on purpose: method
+  parameters are bivariant, which keeps a narrowed `ToolDefinition<XInput>` assignable to the
+  registry's `ToolDefinition[]`.
 - **Group by shared mechanism; split when there is none.** Tools share a directory only when they
   share an interface/implementation, and that shared mechanism lives in one co-located file (no
   `.tool.ts` suffix, so it reads as a helper). A tool that shares nothing is a single-tool directory.

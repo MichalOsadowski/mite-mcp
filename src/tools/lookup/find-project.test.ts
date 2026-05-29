@@ -23,7 +23,9 @@ describe("findProject", () => {
       },
     ]);
 
-    const result = await findProject({ get } as never, { name: "website" });
+    const result = await findProject({ name: "website" }, {
+      getClient: () => ({ get }),
+    } as never);
 
     expect(get).toHaveBeenCalledWith(
       "/projects.json?name=website",
@@ -59,10 +61,13 @@ describe("findProject", () => {
       },
     ]);
 
-    const result = await findProject({ get } as never, {
-      name: "website",
-      customer_id: 10,
-    });
+    const result = await findProject(
+      {
+        name: "website",
+        customer_id: 10,
+      },
+      { getClient: () => ({ get }) } as never,
+    );
 
     expect(get).toHaveBeenCalledWith(
       "/projects.json?name=website&customer_id=10",
@@ -107,11 +112,14 @@ describe("findProject", () => {
       throw new Error(`unexpected path ${path}`);
     });
 
-    const result = await findProject({ get } as never, {
-      name: "site",
-      includeArchived: true,
-      customer_id: 10,
-    });
+    const result = await findProject(
+      {
+        name: "site",
+        includeArchived: true,
+        customer_id: 10,
+      },
+      { getClient: () => ({ get }) } as never,
+    );
 
     expect(get).toHaveBeenCalledWith(
       "/projects.json?name=site&customer_id=10",
@@ -153,13 +161,18 @@ describe("findProject", () => {
       throw new Error(`unexpected path ${path}`);
     });
 
-    const active = await findProject({ get } as never, { name: "site" });
+    const active = await findProject({ name: "site" }, {
+      getClient: () => ({ get }),
+    } as never);
     expect(active.map((p) => p.id)).toEqual([1]);
 
-    const withArchived = await findProject({ get } as never, {
-      name: "site",
-      includeArchived: true,
-    });
+    const withArchived = await findProject(
+      {
+        name: "site",
+        includeArchived: true,
+      },
+      { getClient: () => ({ get }) } as never,
+    );
     expect(withArchived.map((p) => p.id)).toEqual([1, 9]);
   });
 
@@ -168,7 +181,9 @@ describe("findProject", () => {
       { project: { id: 3, name: "Internal R&D" } },
     ]);
 
-    const result = await findProject({ get } as never, { name: "internal" });
+    const result = await findProject({ name: "internal" }, {
+      getClient: () => ({ get }),
+    } as never);
 
     expect(result).toEqual([
       { id: 3, name: "Internal R&D", customer_id: null, customer_name: null },
@@ -178,7 +193,9 @@ describe("findProject", () => {
   it("returns an empty array when nothing matches", async () => {
     const get = vi.fn(async () => []);
 
-    const result = await findProject({ get } as never, { name: "nope" });
+    const result = await findProject({ name: "nope" }, {
+      getClient: () => ({ get }),
+    } as never);
 
     expect(result).toEqual([]);
   });

@@ -1,15 +1,16 @@
-import type { MiteClient } from "../../mite/client.js";
 import { AccountResponse, Myself } from "../../mite/schemas.js";
-import type { ToolDefinition } from "../types.js";
+import type { ToolDefinition, ToolRun } from "../types.js";
 
 export interface WhoamiResult {
   user: { id: number; name: string; role: string };
   account: { name: string };
 }
 
-export async function whoami(
-  client: Pick<MiteClient, "get">,
-): Promise<WhoamiResult> {
+export const whoami: ToolRun<Record<string, unknown>, WhoamiResult> = async (
+  _input,
+  deps,
+) => {
+  const client = deps.getClient();
   const { user } = await client.get("/myself.json", Myself);
   const { account } = await client.get("/account.json", AccountResponse);
 
@@ -17,7 +18,7 @@ export async function whoami(
     user: { id: user.id, name: user.name, role: user.role },
     account: { name: account.name },
   };
-}
+};
 
 export const whoamiTool: ToolDefinition = {
   name: "whoami",
@@ -25,5 +26,5 @@ export const whoamiTool: ToolDefinition = {
   description:
     "Return the authenticated mite user (id, name, role) and account name.",
   inputSchema: {},
-  run: (_input, deps) => whoami(deps.getClient()),
+  run: whoami,
 };

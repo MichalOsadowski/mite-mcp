@@ -24,7 +24,9 @@ describe("listTimeEntries", () => {
   it("returns entries shaped with both minutes and hours", async () => {
     const get = vi.fn(async () => [wrapped(entry)]);
 
-    const result = await listTimeEntries({}, { get } as never);
+    const result = await listTimeEntries({}, {
+      getClient: () => ({ get }),
+    } as never);
 
     expect(result.entries).toHaveLength(1);
     expect(result.entries[0]).toMatchObject({ minutes: 90, hours: 1.5 });
@@ -48,7 +50,7 @@ describe("listTimeEntries", () => {
         limit: 50,
         page: 2,
       },
-      { get } as never,
+      { getClient: () => ({ get }) } as never,
     );
 
     const path = get.mock.calls[0]![0];
@@ -71,7 +73,9 @@ describe("listTimeEntries", () => {
   it("passes the `at` filter through", async () => {
     const get = vi.fn<(path: string) => Promise<unknown>>(async () => []);
 
-    await listTimeEntries({ at: "today" }, { get } as never);
+    await listTimeEntries({ at: "today" }, {
+      getClient: () => ({ get }),
+    } as never);
 
     const path = get.mock.calls[0]![0];
     expect(new URLSearchParams(path.split("?")[1]).get("at")).toBe("today");
@@ -80,7 +84,7 @@ describe("listTimeEntries", () => {
   it("omits unset filters", async () => {
     const get = vi.fn<(path: string) => Promise<unknown>>(async () => []);
 
-    await listTimeEntries({}, { get } as never);
+    await listTimeEntries({}, { getClient: () => ({ get }) } as never);
 
     expect(get.mock.calls[0]![0]).toBe("/time_entries.json");
   });

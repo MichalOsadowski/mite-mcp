@@ -21,7 +21,7 @@ describe("whoami", () => {
       throw new Error(`unexpected path ${path}`);
     });
 
-    const result = await whoami({ get } as never);
+    const result = await whoami({}, { getClient: () => ({ get }) } as never);
 
     expect(result).toEqual({
       user: { id: 42, name: "Ada Lovelace", role: "admin" },

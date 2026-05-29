@@ -10,8 +10,8 @@ export interface WhoamiResult {
 export async function whoami(
   client: Pick<MiteClient, "get">,
 ): Promise<WhoamiResult> {
-  const { user } = Myself.parse(await client.get("/myself.json"));
-  const { account } = AccountResponse.parse(await client.get("/account.json"));
+  const { user } = await client.get("/myself.json", Myself);
+  const { account } = await client.get("/account.json", AccountResponse);
 
   return {
     user: { id: user.id, name: user.name, role: user.role },

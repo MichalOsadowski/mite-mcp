@@ -82,6 +82,27 @@ describe("whoami tool through the adapter", () => {
     expect(result.isError).toBeFalsy();
   });
 
+  it("surfaces a response-shape mismatch as a clean message, not a raw dump", async () => {
+    const deps = {
+      getClient: () => ({
+        get: async () => {
+          throw new MiteApiError(
+            200,
+            "shape",
+            "mite returned an unexpected response shape.",
+          );
+        },
+      }),
+    } as unknown as ToolDeps;
+
+    const result = await toHandler(whoamiTool, deps)({});
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toBe(
+      "mite returned an unexpected response shape.",
+    );
+  });
+
   it("surfaces a mite 401 as a clean message, not a raw dump", async () => {
     const deps = {
       getClient: () => ({

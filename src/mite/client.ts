@@ -1,9 +1,12 @@
+import type { ZodType, infer as zInfer } from "zod/v4";
+
 export type MiteErrorKind =
   | "auth"
   | "not_found"
   | "validation"
   | "locked"
   | "server"
+  | "shape"
   | "unknown";
 
 export class MiteApiError extends Error {
@@ -85,7 +88,7 @@ export class MiteClient {
     return new MiteClient({ account, apiKey, fetchFn });
   }
 
-  async get<T>(path: string): Promise<T> {
+  async get<S extends ZodType>(path: string, schema: S): Promise<zInfer<S>> {
     const response = await this.fetchFn(`${this.baseUrl}${path}`, {
       method: "GET",
       headers: {
@@ -96,6 +99,14 @@ export class MiteClient {
     if (!response.ok) {
       throw mapError(response.status);
     }
-    return (await response.json()) as T;
+    const parsed = schema.safeParse(await response.json());
+    if (!parsed.success) {
+      throw new MiteApiError(
+        response.status,
+        "shape",
+        "mite returned an unexpected response shape.",
+      );
+    }
+    return parsed.data;
   }
 }

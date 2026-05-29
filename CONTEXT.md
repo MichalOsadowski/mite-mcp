@@ -45,7 +45,7 @@ A shared kernel first; resource tools sit on top of it. Each module has one clea
 ```
 src/
   mite/
-    client.ts     # fetch, auth, pagination, error mapping (401/404/422/423/5xx)
+    client.ts     # fetch, auth, pagination, response validation, error mapping (401/404/422/423/5xx + shape)
     schemas.ts    # zod: mite resources + tool inputs
     format.ts     # response shaping, minutes<->hours, dates
     defaults.ts   # per-scope defaults store (JSON file, atomic write) + scope resolution
@@ -73,6 +73,11 @@ src/
 about MCP. Tools are MCP-agnostic too: a tool is a `ToolDefinition` whose `run` returns plain data, and
 only `register.ts` imports the MCP SDK or shapes a `content`/`isError` result. This keeps both the client
 and the tools testable against mocks, with error→result shaping living in one place.
+
+**Validation lives behind the client seam:** `get(path, schema)` parses the response against a zod schema
+and returns validated data — tools pass a schema, they do not `.parse()` themselves. A shape mismatch
+becomes a `MiteApiError` (kind `shape`) with a non-leaky message, so it surfaces through the adapter like
+the mapped HTTP statuses instead of an opaque fallback.
 
 **Tool organization:** a directory per concept, tool and test co-located. One tool per `<name>.tool.ts`
 file (kebab-case of the tool's snake_case name: `list_time_entries` → `list-time-entries.tool.ts`); each

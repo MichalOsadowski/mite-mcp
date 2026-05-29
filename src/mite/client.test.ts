@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import * as z from "zod/v4";
 
 import { MiteApiError, MiteClient } from "./client.js";
 
@@ -17,7 +18,8 @@ describe("MiteClient.get", () => {
       fetchFn,
     });
 
-    const result = await client.get<{ user: { id: number } }>("/myself.json");
+    const schema = z.looseObject({ user: z.looseObject({ id: z.number() }) });
+    const result = await client.get("/myself.json", schema);
 
     expect(result).toEqual({ user: { id: 1 } });
     const [url, init] = fetchFn.mock.calls[0];
@@ -38,7 +40,7 @@ describe("MiteClient.fromEnv", () => {
       fetchFn,
     );
 
-    await client.get("/myself.json");
+    await client.get("/myself.json", z.unknown());
 
     expect(fetchFn.mock.calls[0][0]).toBe("https://acme.mite.de/myself.json");
   });
@@ -59,6 +61,27 @@ describe("MiteClient.fromEnv", () => {
   );
 });
 
+describe("MiteClient.get schema validation", () => {
+  const SENTINEL = "RAW_UPSTREAM_SECRET_BODY";
+
+  it("throws a non-leaky shape error when the response fails the schema", async () => {
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(200, JSON.stringify({ user: { id: SENTINEL } })),
+    });
+    const schema = z.looseObject({ user: z.looseObject({ id: z.number() }) });
+
+    const error = (await client
+      .get("/myself.json", schema)
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error).toBeInstanceOf(MiteApiError);
+    expect(error.kind).toBe("shape");
+    expect(error.message).not.toContain(SENTINEL);
+  });
+});
+
 describe("MiteClient error mapping", () => {
   const SENTINEL = "RAW_UPSTREAM_SECRET_BODY";
 
@@ -70,9 +93,9 @@ describe("MiteClient error mapping", () => {
     });
 
   it("maps 401 to an auth error that names the env vars and leaks no raw body", async () => {
-    const error = await clientFor(401)
-      .get<never>("/myself.json")
-      .catch((e) => e as MiteApiError);
+    const error = (await clientFor(401)
+      .get("/myself.json", z.unknown())
+      .catch((e) => e)) as MiteApiError;
 
     expect(error).toBeInstanceOf(MiteApiError);
     expect(error.kind).toBe("auth");
@@ -91,9 +114,9 @@ describe("MiteClient error mapping", () => {
   ])(
     "maps %i to kind %s without leaking the raw body",
     async (status, kind) => {
-      const error = await clientFor(status)
-        .get<never>("/myself.json")
-        .catch((e) => e as MiteApiError);
+      const error = (await clientFor(status)
+        .get("/myself.json", z.unknown())
+        .catch((e) => e)) as MiteApiError;
 
       expect(error).toBeInstanceOf(MiteApiError);
       expect(error.kind).toBe(kind);

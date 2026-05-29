@@ -1,4 +1,5 @@
 import { tools as pingTools } from "./ping/index.js";
+import { tools as reportTools } from "./reports/index.js";
 import type { ToolDefinition } from "./types.js";
 import { tools as whoamiTools } from "./whoami/index.js";
 
@@ -7,4 +8,8 @@ import { tools as whoamiTools } from "./whoami/index.js";
  * each concept directory's tool array. This changes only when a directory is
  * added, never per tool. register.ts loops it.
  */
-export const tools: ToolDefinition[] = [...pingTools, ...whoamiTools];
+export const tools: ToolDefinition[] = [
+  ...pingTools,
+  ...whoamiTools,
+  ...reportTools,
+];

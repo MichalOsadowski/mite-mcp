@@ -119,6 +119,18 @@ describe("findProject", () => {
     expect(withArchived.map((p) => p.id)).toEqual([1, 9]);
   });
 
+  it("normalizes a customer-less project to null parent fields", async () => {
+    const get = vi.fn(async () => [
+      { project: { id: 3, name: "Internal R&D" } },
+    ]);
+
+    const result = await findProject({ get } as never, { name: "internal" });
+
+    expect(result).toEqual([
+      { id: 3, name: "Internal R&D", customer_id: null, customer_name: null },
+    ]);
+  });
+
   it("returns an empty array when nothing matches", async () => {
     const get = vi.fn(async () => []);
 

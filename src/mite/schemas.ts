@@ -37,8 +37,10 @@ export type MiteAccount = z.infer<typeof MiteAccount>;
 export const Project = z.looseObject({
   id: z.number(),
   name: z.string(),
-  customer_id: z.number().nullable(),
-  customer_name: z.string().nullable(),
+  // A project may have no customer; mite may send null or omit the key, so allow
+  // both (nullable + optional) to keep customer-less projects from shape-erroring.
+  customer_id: z.number().nullish(),
+  customer_name: z.string().nullish(),
 });
 
 export const Service = z.looseObject({

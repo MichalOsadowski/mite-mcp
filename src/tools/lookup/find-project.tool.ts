@@ -31,8 +31,10 @@ export async function findProject(
   const candidates = wrapped.map(({ project }) => ({
     id: project.id,
     name: project.name,
-    customer_id: project.customer_id,
-    customer_name: project.customer_name,
+    // Customer-less projects may arrive as null or with the key absent; present
+    // a stable shape by normalizing either to null.
+    customer_id: project.customer_id ?? null,
+    customer_name: project.customer_name ?? null,
   }));
   // mite has no customer query on /projects, so narrow client-side on the
   // customer_id each project already carries.

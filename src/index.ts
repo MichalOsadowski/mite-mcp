@@ -2,6 +2,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import * as z from "zod/v4";
 
+export const createPingText = (message?: string): string => message ?? "pong";
+
 const server = new McpServer({
   name: "mite-mcp",
   version: "0.1.0",
@@ -20,10 +22,10 @@ server.registerTool(
     content: [
       {
         type: "text",
-        text: message ?? "pong",
+        text: createPingText(message),
       },
     ],
-  })
+  }),
 );
 
 async function main(): Promise<void> {
@@ -31,7 +33,9 @@ async function main(): Promise<void> {
   await server.connect(transport);
 }
 
-main().catch((error) => {
-  console.error("Server error:", error);
-  process.exit(1);
-});
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((error) => {
+    console.error("Server error:", error);
+    process.exit(1);
+  });
+}

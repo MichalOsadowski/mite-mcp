@@ -20,6 +20,24 @@ npm run dev
 npm run build
 ```
 
+## Lint
+
+```bash
+npm run lint
+```
+
+## Format check
+
+```bash
+npm run format
+```
+
+## Test
+
+```bash
+npm test
+```
+
 ## Run
 
 ```bash

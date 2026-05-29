@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createPingText } from "./index.js";
+import { createPingText } from "./ping.tool.js";
 
 describe("createPingText", () => {
   it("returns pong when message is not provided", () => {

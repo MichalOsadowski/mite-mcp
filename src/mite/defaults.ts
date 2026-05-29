@@ -48,10 +48,6 @@ export const normalizeGitRemote = (remote: string): string => {
     s = s.replace(/^[a-z][a-z0-9+.-]*:\/\//i, "").replace(/^[^/@]+@/, "");
   }
   s = s.replace(/\.git$/i, "").replace(/\/+$/, "");
-  const slash = s.indexOf("/");
-  if (slash === -1) {
-    return s.toLowerCase();
-  }
   // Lowercase host and path: hosts are case-insensitive, and forge paths are
   // case-insensitive in practice (GitHub treats Acme/Web == acme/web).
   return s.toLowerCase();

@@ -1,3 +1,4 @@
+import { tools as defaultsTools } from "./defaults/index.js";
 import { tools as lookupTools } from "./lookup/index.js";
 import { tools as pingTools } from "./ping/index.js";
 import { tools as reportTools } from "./reports/index.js";
@@ -17,4 +18,5 @@ export const tools: ToolDefinition[] = [
   ...reportTools,
   ...timeEntriesTools,
   ...lookupTools,
+  ...defaultsTools,
 ];

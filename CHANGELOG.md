@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/MichalOsadowski/mite-mcp/compare/v1.0.0...v1.0.1) (2026-05-29)
+
+### Bug Fixes
+
+- start the server when launched via the bin (npx/global) and report the real version ([507b75c](https://github.com/MichalOsadowski/mite-mcp/commit/507b75c705416dd6a75af6f9f2aeb7d195054fd1))
+
 # 1.0.0 (2026-05-29)
 
 ### Bug Fixes

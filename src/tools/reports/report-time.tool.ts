@@ -21,29 +21,33 @@ const ReportResponse = z.array(
   }),
 );
 
-export type ReportTimeInput = {
-  /**
-   * One or more grouping dimensions (project, customer, service, user, day,
-   * week, month, year), comma-separated. The order determines sort order.
-   */
-  group_by: string;
-  /** mite date keyword (`today`, `this_month`, …) or `YYYY-MM-DD`. */
-  at?: string;
-  /** Start of an explicit date range (keyword or `YYYY-MM-DD`). */
-  from?: string;
-  /** End of an explicit date range (keyword or `YYYY-MM-DD`). */
-  to?: string;
-  /** Scope to a single project. */
-  project_id?: number;
-  /** Scope to a single customer. */
-  customer_id?: number;
-  /** Scope to a single service. */
-  service_id?: number;
-  /** Scope to a single user. */
-  user_id?: number;
-  /** Restrict to billable (true) or non-billable (false) entries. */
-  billable?: boolean;
-};
+/**
+ * The tool's input, defined once. The zod schema is the single source of truth:
+ * the TS type is inferred from it and `inputSchema` exposes its shape.
+ */
+const ReportTimeInput = z.object({
+  group_by: z
+    .string()
+    .describe(
+      "Comma-separated grouping dimensions (project, customer, service, " +
+        "user, day, week, month, year); order determines sort.",
+    ),
+  at: z
+    .string()
+    .optional()
+    .describe("Date keyword (today, this_month, …) or YYYY-MM-DD."),
+  from: z.string().optional().describe("Range start (keyword or YYYY-MM-DD)."),
+  to: z.string().optional().describe("Range end (keyword or YYYY-MM-DD)."),
+  project_id: z.number().optional().describe("Scope to a single project."),
+  customer_id: z.number().optional().describe("Scope to a single customer."),
+  service_id: z.number().optional().describe("Scope to a single service."),
+  user_id: z.number().optional().describe("Scope to a single user."),
+  billable: z
+    .boolean()
+    .optional()
+    .describe("Restrict to billable (true) or non-billable (false) entries."),
+});
+export type ReportTimeInput = z.infer<typeof ReportTimeInput>;
 
 /** A single grouped total: its identity fields plus minutes, hours, revenue. */
 export type ReportGroup = Record<string, unknown> & {
@@ -97,30 +101,6 @@ export const reportTimeTool: ToolDefinition<ReportTimeInput> = {
     "as a comma-separated list whose order controls sort. Each group reports " +
     "minutes, hours, and revenue (revenue as computed by mite). This is the " +
     "only sanctioned way to total time; never sum individual entries.",
-  inputSchema: {
-    group_by: z
-      .string()
-      .describe(
-        "Comma-separated grouping dimensions (project, customer, service, " +
-          "user, day, week, month, year); order determines sort.",
-      ),
-    at: z
-      .string()
-      .optional()
-      .describe("Date keyword (today, this_month, …) or YYYY-MM-DD."),
-    from: z
-      .string()
-      .optional()
-      .describe("Range start (keyword or YYYY-MM-DD)."),
-    to: z.string().optional().describe("Range end (keyword or YYYY-MM-DD)."),
-    project_id: z.number().optional().describe("Scope to a single project."),
-    customer_id: z.number().optional().describe("Scope to a single customer."),
-    service_id: z.number().optional().describe("Scope to a single service."),
-    user_id: z.number().optional().describe("Scope to a single user."),
-    billable: z
-      .boolean()
-      .optional()
-      .describe("Restrict to billable (true) or non-billable (false) entries."),
-  },
+  inputSchema: ReportTimeInput.shape,
   run: (input, deps) => reportTime(input, deps.getClient()),
 };

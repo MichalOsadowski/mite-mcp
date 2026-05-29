@@ -1,13 +1,13 @@
 {
   "name": "mite-mcp",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "MCP to allow agents interact with mite.de",
   "main": "dist/index.js",
   "bin": {
     "mite-mcp": "dist/index.js"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "prepublishOnly": "npm run build",
     "start": "node dist/index.js",
     "dev": "tsx src/index.ts",

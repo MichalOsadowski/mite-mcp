@@ -5,11 +5,10 @@ import { TimeEntryResponse } from "../../mite/schemas.js";
 import type { ToolDefinition } from "../types.js";
 import { shapeEntry, type ShapedEntry } from "./entry.js";
 
-const getInputSchema = {
+const GetInput = z.object({
   id: z.number(),
-} satisfies Record<string, z.ZodType>;
-
-type GetInput = { id: number };
+});
+type GetInput = z.infer<typeof GetInput>;
 
 export interface GetTimeEntryResult {
   entry: ShapedEntry;
@@ -33,6 +32,6 @@ export const getTimeEntryTool: ToolDefinition<GetInput> = {
     "Fetch a single mite time entry by id. Surfaces both canonical minutes " +
     "and convenience hours. For totals or aggregation across entries use the " +
     "reporting tool (report_time) instead.",
-  inputSchema: getInputSchema,
+  inputSchema: GetInput.shape,
   run: (input, deps) => getTimeEntry(input, deps.getClient()),
 };

@@ -10,7 +10,7 @@ import { shapeEntry, type ShapedEntry } from "./entry.js";
  * <https://mite.de/en/api/time-entries.html>. `user_id` accepts the `current`
  * keyword. All optional; unset filters are omitted from the query.
  */
-const listInputSchema = {
+const ListInput = z.object({
   at: z.string().optional(),
   from: z.string().optional(),
   to: z.string().optional(),
@@ -24,11 +24,8 @@ const listInputSchema = {
   direction: z.enum(["asc", "desc"]).optional(),
   limit: z.number().optional(),
   page: z.number().optional(),
-} satisfies Record<string, z.ZodType>;
-
-type ListInput = {
-  [K in keyof typeof listInputSchema]?: z.infer<(typeof listInputSchema)[K]>;
-};
+});
+type ListInput = z.infer<typeof ListInput>;
 
 export interface ListTimeEntriesResult {
   entries: ShapedEntry[];
@@ -67,6 +64,6 @@ export const listTimeEntriesTool: ToolDefinition<ListInput> = {
     "convenience hours. This is for inspecting individual entries — for any " +
     "totals or aggregation use the reporting tool (report_time), which " +
     "aggregates server-side and is correct across pages.",
-  inputSchema: listInputSchema,
+  inputSchema: ListInput.shape,
   run: (input, deps) => listTimeEntries(input, deps.getClient()),
 };

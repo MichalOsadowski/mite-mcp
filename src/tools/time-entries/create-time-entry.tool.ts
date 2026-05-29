@@ -4,7 +4,7 @@ import { TimeEntryResponse } from "../../mite/schemas.js";
 import type { ToolDefinition, ToolDeps } from "../types.js";
 import { resolveMinutes, shapeEntry, type ShapedEntry } from "./entry.js";
 
-const createInputSchema = {
+const CreateInput = z.object({
   project_id: z.number(),
   service_id: z.number(),
   minutes: z.number().optional(),
@@ -16,13 +16,8 @@ const createInputSchema = {
   scope: z.string().optional(),
   /** Off by default — create acts immediately (ADR-0004). */
   preview: z.boolean().optional(),
-} satisfies Record<string, z.ZodType>;
-
-type CreateInput = {
-  [K in keyof typeof createInputSchema]?: z.infer<
-    (typeof createInputSchema)[K]
-  >;
-} & { project_id: number; service_id: number };
+});
+type CreateInput = z.infer<typeof CreateInput>;
 
 /** The payload mite receives, with omitted optional fields left out entirely. */
 interface CreatePayload {
@@ -90,6 +85,6 @@ export const createTimeEntryTool: ToolDefinition<CreateInput> = {
     "pass preview:true to see what would be sent without writing. The success " +
     "response echoes the resolved project and service names so you can verify " +
     "what was logged.",
-  inputSchema: createInputSchema,
+  inputSchema: CreateInput.shape,
   run: (input, deps) => createTimeEntry(input, deps),
 };

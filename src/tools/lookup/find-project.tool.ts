@@ -27,8 +27,11 @@ export async function findProject(
     schema: ProjectsResponse,
     name: input.name,
     includeArchived: input.includeArchived,
+    // mite filters /projects by customer_id server-side, so delegate the
+    // narrowing rather than re-filtering the response client-side.
+    filters: { customer_id: input.customer_id },
   });
-  const candidates = wrapped.map(({ project }) => ({
+  return wrapped.map(({ project }) => ({
     id: project.id,
     name: project.name,
     // Customer-less projects may arrive as null or with the key absent; present
@@ -36,11 +39,6 @@ export async function findProject(
     customer_id: project.customer_id ?? null,
     customer_name: project.customer_name ?? null,
   }));
-  // mite has no customer query on /projects, so narrow client-side on the
-  // customer_id each project already carries.
-  return input.customer_id === undefined
-    ? candidates
-    : candidates.filter((c) => c.customer_id === input.customer_id);
 }
 
 export const findProjectTool: ToolDefinition = {

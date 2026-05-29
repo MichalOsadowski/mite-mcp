@@ -45,7 +45,9 @@ describe("findProject", () => {
     ]);
   });
 
-  it("narrows to a single customer when customer_id is given", async () => {
+  it("delegates customer narrowing to mite via the customer_id query param", async () => {
+    // mite narrows server-side, so the response already contains only the
+    // requested customer's projects; we return it as-is, not re-filtered.
     const get = vi.fn(async () => [
       {
         project: {
@@ -55,14 +57,6 @@ describe("findProject", () => {
           customer_name: "Acme Corp",
         },
       },
-      {
-        project: {
-          id: 2,
-          name: "Website Maintenance",
-          customer_id: 11,
-          customer_name: "Globex",
-        },
-      },
     ]);
 
     const result = await findProject({ get } as never, {
@@ -70,6 +64,10 @@ describe("findProject", () => {
       customer_id: 10,
     });
 
+    expect(get).toHaveBeenCalledWith(
+      "/projects.json?name=website&customer_id=10",
+      expect.anything(),
+    );
     expect(result).toEqual([
       {
         id: 1,
@@ -78,6 +76,52 @@ describe("findProject", () => {
         customer_name: "Acme Corp",
       },
     ]);
+  });
+
+  it("carries customer_id on both active and archived paths", async () => {
+    const get = vi.fn(async (path: string) => {
+      if (path === "/projects.json?name=site&customer_id=10") {
+        return [
+          {
+            project: {
+              id: 1,
+              name: "Site A",
+              customer_id: 10,
+              customer_name: "Acme Corp",
+            },
+          },
+        ];
+      }
+      if (path === "/projects/archived.json?name=site&customer_id=10") {
+        return [
+          {
+            project: {
+              id: 9,
+              name: "Old Site",
+              customer_id: 10,
+              customer_name: "Acme Corp",
+            },
+          },
+        ];
+      }
+      throw new Error(`unexpected path ${path}`);
+    });
+
+    const result = await findProject({ get } as never, {
+      name: "site",
+      includeArchived: true,
+      customer_id: 10,
+    });
+
+    expect(get).toHaveBeenCalledWith(
+      "/projects.json?name=site&customer_id=10",
+      expect.anything(),
+    );
+    expect(get).toHaveBeenCalledWith(
+      "/projects/archived.json?name=site&customer_id=10",
+      expect.anything(),
+    );
+    expect(result.map((p) => p.id)).toEqual([1, 9]);
   });
 
   it("excludes archived by default and merges both endpoints when included", async () => {

@@ -61,6 +61,10 @@ src/
       create-time-entry.tool.ts   # …get / update / delete alongside
       entry.ts                    # the shared mechanism, in one place (no .tool.ts)
       index.ts                    # export const tools = [...the module's tools]
+    reports/        # a loner module: report_time — server-side group_by aggregation (no shared mechanism)
+      report-time.tool.ts
+      report-time.test.ts
+      index.ts                    # export const tools = [reportTimeTool]
     tracker/        # module: get / start / stop (share the running-timer state)
     lookup/         # module: find_project / find_service / find_customer (share name->id lookup)
     defaults/       # module: set_default / get_default / clear_default / list_defaults

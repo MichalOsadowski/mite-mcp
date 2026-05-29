@@ -1,8 +1,10 @@
 import { tools as lookupTools } from "./lookup/index.js";
 import { tools as pingTools } from "./ping/index.js";
+import { tools as reportTools } from "./reports/index.js";
 import { tools as timeEntriesTools } from "./time-entries/index.js";
-import type { ToolDefinition } from "./types.js";
 import { tools as whoamiTools } from "./whoami/index.js";
+
+import type { ToolDefinition } from "./types.js";
 
 /**
  * The tool registry — every tool the server exposes, assembled by spreading
@@ -12,6 +14,7 @@ import { tools as whoamiTools } from "./whoami/index.js";
 export const tools: ToolDefinition[] = [
   ...pingTools,
   ...whoamiTools,
+  ...reportTools,
   ...timeEntriesTools,
   ...lookupTools,
 ];

@@ -18,7 +18,10 @@ type StopInput = z.infer<typeof StopInput>;
 /** DELETE /tracker/:id.json to stop the timer; shape the stopped entry. */
 const stopById = async (id: number, deps: ToolDeps): Promise<StopState> => {
   const client = deps.getClient();
-  const { tracker } = await client.del(`/tracker/${id}.json`, TrackerResponse);
+  const { tracker } = await client.delete(
+    `/tracker/${id}.json`,
+    TrackerResponse,
+  );
   if (tracker.stopped_time_entry === undefined) {
     return { stopped: false };
   }

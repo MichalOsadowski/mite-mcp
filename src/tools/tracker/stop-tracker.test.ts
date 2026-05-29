@@ -22,7 +22,7 @@ const depsWith = (
   overrides: Partial<{
     get: ReturnType<typeof vi.fn>;
     patch: ReturnType<typeof vi.fn>;
-    del: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
     post: ReturnType<typeof vi.fn>;
   }> = {},
 ) =>
@@ -31,7 +31,7 @@ const depsWith = (
       get: overrides.get ?? vi.fn(),
       post: overrides.post ?? vi.fn(),
       patch: overrides.patch ?? vi.fn(),
-      del: overrides.del ?? vi.fn(),
+      delete: overrides.delete ?? vi.fn(),
     }),
   }) as never;
 
@@ -40,7 +40,7 @@ describe("stopTracker", () => {
     const get = vi.fn(async () => running(36135321));
     const del = vi.fn(async () => stopped(36135321, 247));
 
-    const result = await stopTracker({}, depsWith({ get, del }));
+    const result = await stopTracker({}, depsWith({ get, delete: del }));
 
     expect(get).toHaveBeenCalledWith("/tracker.json", expect.anything());
     expect(del).toHaveBeenCalledWith(
@@ -57,7 +57,7 @@ describe("stopTracker", () => {
     const get = vi.fn(async () => none());
     const del = vi.fn();
 
-    const result = await stopTracker({}, depsWith({ get, del }));
+    const result = await stopTracker({}, depsWith({ get, delete: del }));
 
     expect(del).not.toHaveBeenCalled();
     expect(result).toEqual({ stopped: false });
@@ -69,7 +69,7 @@ describe("stopTracker", () => {
 
     const result = await stopTracker(
       { time_entry_id: 99999 },
-      depsWith({ get, del }),
+      depsWith({ get, delete: del }),
     );
 
     expect(get).not.toHaveBeenCalled();

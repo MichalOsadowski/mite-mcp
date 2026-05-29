@@ -31,15 +31,14 @@ const createdEntry = (id = 52324) => ({
 });
 
 type Post = (path: string, body: unknown, schema: unknown) => Promise<unknown>;
-type PathOnly = (path: string, schema: unknown) => Promise<unknown>;
 const postFn = (impl: Post) => vi.fn<Post>(impl);
-const pathFn = (impl: PathOnly) => vi.fn<PathOnly>(impl);
 
 const depsWith = (
   overrides: Partial<{
-    get: ReturnType<typeof pathFn>;
-    patch: ReturnType<typeof pathFn>;
-    del: ReturnType<typeof pathFn>;
+    get: ReturnType<typeof postFn>;
+    // tracker start uses the bodyless+schema PATCH overload: (path, undefined, schema)
+    patch: ReturnType<typeof postFn>;
+    delete: ReturnType<typeof postFn>;
     post: ReturnType<typeof postFn>;
   }> = {},
 ) =>
@@ -48,13 +47,13 @@ const depsWith = (
       get: overrides.get ?? vi.fn(),
       post: overrides.post ?? vi.fn(),
       patch: overrides.patch ?? vi.fn(),
-      del: overrides.del ?? vi.fn(),
+      delete: overrides.delete ?? vi.fn(),
     }),
   }) as never;
 
 describe("startTracker", () => {
   it("PATCHes /tracker/:id.json for an existing entry and returns the running state", async () => {
-    const patch = pathFn(async () => started(36135321));
+    const patch = postFn(async () => started(36135321));
 
     const result = await startTracker(
       { time_entry_id: 36135321 },
@@ -63,6 +62,7 @@ describe("startTracker", () => {
 
     expect(patch).toHaveBeenCalledWith(
       "/tracker/36135321.json",
+      undefined,
       expect.anything(),
     );
     expect(result).toEqual({
@@ -78,7 +78,7 @@ describe("startTracker", () => {
 
   it("create-then-start: POSTs a new entry, then PATCHes the tracker against it", async () => {
     const post = postFn(async () => createdEntry(52324));
-    const patch = pathFn(async () => started(52324));
+    const patch = postFn(async () => started(52324));
 
     const result = await startTracker(
       { project_id: 88309, service_id: 12984, minutes: 90, note: "work" },
@@ -98,6 +98,7 @@ describe("startTracker", () => {
     });
     expect(patch).toHaveBeenCalledWith(
       "/tracker/52324.json",
+      undefined,
       expect.anything(),
     );
     expect(result).toEqual({
@@ -113,7 +114,7 @@ describe("startTracker", () => {
 
   it("converts hours to minutes in the create-then-start POST body", async () => {
     const post = postFn(async () => createdEntry(52324));
-    const patch = pathFn(async () => started(52324));
+    const patch = postFn(async () => started(52324));
 
     await startTracker(
       { project_id: 88309, service_id: 12984, hours: 1.5 },
@@ -126,7 +127,7 @@ describe("startTracker", () => {
 
   it("time_entry_id wins when both an id and create fields are given (no create)", async () => {
     const post = postFn(async () => createdEntry(99999));
-    const patch = pathFn(async () => started(36135321));
+    const patch = postFn(async () => started(36135321));
 
     await startTracker(
       {
@@ -141,6 +142,7 @@ describe("startTracker", () => {
     expect(post).not.toHaveBeenCalled();
     expect(patch).toHaveBeenCalledWith(
       "/tracker/36135321.json",
+      undefined,
       expect.anything(),
     );
   });

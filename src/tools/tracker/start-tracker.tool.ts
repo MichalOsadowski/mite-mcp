@@ -84,6 +84,7 @@ const startAgainst = async (
   const client = deps.getClient();
   const { tracker } = await client.patch(
     `/tracker/${id}.json`,
+    undefined,
     TrackerResponse,
   );
   return shapeRunning(tracker.tracking_time_entry);

@@ -19,7 +19,7 @@ const depsWith = (
   overrides: Partial<{
     get: ReturnType<typeof vi.fn>;
     patch: ReturnType<typeof vi.fn>;
-    del: ReturnType<typeof vi.fn>;
+    delete: ReturnType<typeof vi.fn>;
     post: ReturnType<typeof vi.fn>;
   }> = {},
 ) =>
@@ -28,7 +28,7 @@ const depsWith = (
       get: overrides.get ?? vi.fn(),
       post: overrides.post ?? vi.fn(),
       patch: overrides.patch ?? vi.fn(),
-      del: overrides.del ?? vi.fn(),
+      delete: overrides.delete ?? vi.fn(),
     }),
   }) as never;
 

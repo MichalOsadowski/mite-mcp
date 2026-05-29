@@ -123,29 +123,62 @@ export class MiteClient {
   }
 
   /**
-   * Bodyless write seam for the tracker: PATCH starts the timer against an
-   * existing entry (`/tracker/:id.json`). mite carries the id in the path and
-   * needs no body, so this mirrors `get`'s `(path, schema)` shape rather than
-   * `post`'s. Non-OK statuses map through `mapError`; the response validates
-   * through the same zod seam.
+   * Write seam for PATCH, serving two mite shapes through overloads:
+   *  - `patch(path, body)` sends a JSON body and returns nothing — mite replies
+   *    `200` with an EMPTY body (time-entry update), so there is no schema to run
+   *    (an empty body would fail `response.json()`).
+   *  - `patch(path, body, schema)` validates the response through the same zod
+   *    seam as `get`/`post`. The tracker PATCH (`/tracker/:id.json`) carries the
+   *    id in the path and takes no body, so it passes `undefined` as the body.
+   * Non-OK statuses map through `mapError`; a locked entry surfaces as kind
+   * `locked` (423). Reached by write tools via `ToolDeps.getClient()`.
    */
-  async patch<S extends ZodType>(path: string, schema: S): Promise<zInfer<S>> {
+  async patch(path: string, body: unknown): Promise<void>;
+  async patch<S extends ZodType>(
+    path: string,
+    body: unknown,
+    schema: S,
+  ): Promise<zInfer<S>>;
+  async patch<S extends ZodType>(
+    path: string,
+    body: unknown,
+    schema?: S,
+  ): Promise<zInfer<S> | void> {
+    const headers: Record<string, string> = {
+      "X-MiteApiKey": this.apiKey,
+      Accept: "application/json",
+    };
+    if (body !== undefined) {
+      headers["Content-Type"] = "application/json";
+    }
     const response = await this.fetchFn(`${this.baseUrl}${path}`, {
       method: "PATCH",
-      headers: {
-        "X-MiteApiKey": this.apiKey,
-        Accept: "application/json",
-      },
+      headers,
+      ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
-    return this.validate(response, schema);
+    if (schema) {
+      return this.validate(response, schema);
+    }
+    if (!response.ok) {
+      throw mapError(response.status);
+    }
   }
 
   /**
-   * Bodyless write seam for the tracker: DELETE stops the timer on an existing
-   * entry (`/tracker/:id.json`). Like `patch`, the id is in the path and there
-   * is no body. Named `del` because `delete` is a reserved word.
+   * Write seam for DELETE, serving two mite shapes through overloads:
+   *  - `delete(path)` returns nothing — mite replies `200` with an EMPTY body
+   *    (time-entry delete), so only the status is checked.
+   *  - `delete(path, schema)` validates the response through the same zod seam
+   *    (tracker stop on `/tracker/:id.json`, which returns the stopped entry).
+   * Non-OK statuses map through `mapError`; a locked entry surfaces as kind
+   * `locked` (423).
    */
-  async del<S extends ZodType>(path: string, schema: S): Promise<zInfer<S>> {
+  async delete(path: string): Promise<void>;
+  async delete<S extends ZodType>(path: string, schema: S): Promise<zInfer<S>>;
+  async delete<S extends ZodType>(
+    path: string,
+    schema?: S,
+  ): Promise<zInfer<S> | void> {
     const response = await this.fetchFn(`${this.baseUrl}${path}`, {
       method: "DELETE",
       headers: {
@@ -153,7 +186,12 @@ export class MiteClient {
         Accept: "application/json",
       },
     });
-    return this.validate(response, schema);
+    if (schema) {
+      return this.validate(response, schema);
+    }
+    if (!response.ok) {
+      throw mapError(response.status);
+    }
   }
 
   private async validate<S extends ZodType>(

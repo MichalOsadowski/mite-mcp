@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { whoami } from "./resolve.js";
+import { whoami } from "./whoami.tool.js";
 
 describe("whoami", () => {
   it("returns the authenticated user and account name", async () => {

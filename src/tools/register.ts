@@ -1,25 +1,28 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import * as z from "zod/v4";
 
-import { MiteApiError, MiteClient } from "../mite/client.js";
-import { whoami } from "./resolve.js";
-
-export const createPingText = (message?: string): string => message ?? "pong";
+import { MiteApiError } from "../mite/client.js";
+import { tools } from "./index.js";
+import type { ToolDefinition, ToolDeps } from "./types.js";
 
 type TextResult = {
   content: { type: "text"; text: string }[];
   isError?: boolean;
 };
 
-type MiteClientLike = Pick<MiteClient, "get">;
-
-export const makeWhoamiHandler =
-  (getClient: () => MiteClientLike) => async (): Promise<TextResult> => {
+/**
+ * The one MCP-aware adapter: run a tool and shape its plain return value into an
+ * MCP result. A string becomes the text verbatim; anything else is pretty JSON.
+ * A MiteApiError surfaces its non-leaky message; any other throw is hidden
+ * behind a generic message. This is the only place tools touch MCP result shape.
+ */
+export const toHandler =
+  (tool: ToolDefinition, deps: ToolDeps) =>
+  async (input: Record<string, unknown>): Promise<TextResult> => {
     try {
-      const result = await whoami(getClient());
-      return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
-      };
+      const data = await tool.run(input, deps);
+      const text =
+        typeof data === "string" ? data : JSON.stringify(data, null, 2);
+      return { content: [{ type: "text", text }] };
     } catch (error) {
       const text =
         error instanceof MiteApiError
@@ -29,31 +32,16 @@ export const makeWhoamiHandler =
     }
   };
 
-export interface ToolDeps {
-  getClient: () => MiteClientLike;
-}
-
 export function registerTools(server: McpServer, deps: ToolDeps): void {
-  server.registerTool(
-    "ping",
-    {
-      title: "Ping",
-      description: "Basic connectivity check tool.",
-      inputSchema: { message: z.string().optional() },
-    },
-    async ({ message }) => ({
-      content: [{ type: "text", text: createPingText(message) }],
-    }),
-  );
-
-  server.registerTool(
-    "whoami",
-    {
-      title: "Who am I",
-      description:
-        "Return the authenticated mite user (id, name, role) and account name.",
-      inputSchema: {},
-    },
-    makeWhoamiHandler(deps.getClient),
-  );
+  for (const tool of tools) {
+    server.registerTool(
+      tool.name,
+      {
+        title: tool.title,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      },
+      toHandler(tool, deps),
+    );
+  }
 }

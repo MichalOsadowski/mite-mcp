@@ -1,5 +1,6 @@
-import type { MiteClient } from "../mite/client.js";
-import { AccountResponse, Myself } from "../mite/schemas.js";
+import type { MiteClient } from "../../mite/client.js";
+import { AccountResponse, Myself } from "../../mite/schemas.js";
+import type { ToolDefinition } from "../types.js";
 
 export interface WhoamiResult {
   user: { id: number; name: string; role: string };
@@ -17,3 +18,12 @@ export async function whoami(
     account: { name: account.name },
   };
 }
+
+export const whoamiTool: ToolDefinition = {
+  name: "whoami",
+  title: "Who am I",
+  description:
+    "Return the authenticated mite user (id, name, role) and account name.",
+  inputSchema: {},
+  run: (_input, deps) => whoami(deps.getClient()),
+};

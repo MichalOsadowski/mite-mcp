@@ -1,0 +1,33 @@
+{
+  "name": "mite-mcp",
+  "version": "0.1.0",
+  "description": "MCP to allow agents interact with mite.de",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MichalOsadowski/mite-mcp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/MichalOsadowski/mite-mcp/issues"
+  },
+  "homepage": "https://github.com/MichalOsadowski/mite-mcp#readme",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.1",
+    "typescript": "^6.0.3",
+    "tsx": "^4.20.6"
+  }
+}

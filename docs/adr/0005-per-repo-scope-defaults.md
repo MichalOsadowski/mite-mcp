@@ -38,5 +38,5 @@ they never apply.
 - **Agent-authored scope string:** rejected — drifts and orphans defaults.
 - **Defaults in the agent/client layer (CLAUDE.md/memory):** rejected — ties the convenience to one
   MCP client; not portable.
-- **mite bookmarks:** rejected — they are saved *read* filters, not creation defaults.
+- **mite bookmarks:** rejected — they are saved _read_ filters, not creation defaults.
 - **Single global active default (no key):** rejected — one slot can't serve multiple repos.

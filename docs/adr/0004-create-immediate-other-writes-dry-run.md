@@ -6,7 +6,7 @@
 ## Context
 
 Creating time entries is the dominant operation, so it must be low-friction. But the end goal is
-*unattended* automation, and some writes are destructive. A blanket dry-run on every write would add
+_unattended_ automation, and some writes are destructive. A blanket dry-run on every write would add
 friction exactly where we want flow; no guardrails at all would make destructive mistakes easy.
 
 ## Decision

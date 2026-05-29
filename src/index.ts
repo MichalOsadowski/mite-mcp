@@ -1,32 +1,19 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import * as z from "zod/v4";
 
-export const createPingText = (message?: string): string => message ?? "pong";
+import { MiteClient } from "./mite/client.js";
+import { registerTools } from "./tools/register.js";
 
 const server = new McpServer({
   name: "mite-mcp",
   version: "0.1.0",
 });
 
-server.registerTool(
-  "ping",
-  {
-    title: "Ping",
-    description: "Basic connectivity check tool.",
-    inputSchema: {
-      message: z.string().optional(),
-    },
-  },
-  async ({ message }) => ({
-    content: [
-      {
-        type: "text",
-        text: createPingText(message),
-      },
-    ],
-  }),
-);
+registerTools(server, {
+  // Resolve credentials lazily so the server (and ping) start without them;
+  // a missing/invalid key only surfaces when a mite-backed tool is called.
+  getClient: () => MiteClient.fromEnv(),
+});
 
 async function main(): Promise<void> {
   const transport = new StdioServerTransport();

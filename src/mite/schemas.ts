@@ -61,6 +61,39 @@ export const TimeEntryListResponse = z.array(TimeEntryResponse);
 export type TimeEntry = z.infer<typeof TimeEntry>;
 
 /**
+ * The tracker's running entry. mite reports only `id`, `minutes`, and `since`
+ * (start timestamp) for the timer — not the full time entry — so this is its
+ * own slim, permissive schema rather than `TimeEntry`.
+ */
+export const TrackingTimeEntry = z.looseObject({
+  id: z.number(),
+  minutes: z.number(),
+  since: z.string(),
+});
+
+/** mite reports a stopped entry as just an id + the accumulated minutes. */
+export const StoppedTimeEntry = z.looseObject({
+  id: z.number(),
+  minutes: z.number(),
+});
+
+/**
+ * The tracker envelope. Both inner keys are optional: `{ tracker: {} }` means
+ * nothing runs; a start returns `tracking_time_entry` (plus `stopped_time_entry`
+ * when switching from another entry); a stop returns `stopped_time_entry`.
+ */
+export const TrackerResponse = z.looseObject({
+  tracker: z.looseObject({
+    tracking_time_entry: TrackingTimeEntry.optional(),
+    stopped_time_entry: StoppedTimeEntry.optional(),
+  }),
+});
+
+export type TrackingTimeEntry = z.infer<typeof TrackingTimeEntry>;
+export type StoppedTimeEntry = z.infer<typeof StoppedTimeEntry>;
+export type TrackerResponse = z.infer<typeof TrackerResponse>;
+
+/**
  * Lookup resources. mite's list endpoints return an array of single-key-wrapped
  * objects — e.g. `[{ "project": { … } }, …]` — so each resource has an inner
  * schema (validate only the fields we consume) and a response schema for the

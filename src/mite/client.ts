@@ -96,6 +96,36 @@ export class MiteClient {
         Accept: "application/json",
       },
     });
+    return this.validate(response, schema);
+  }
+
+  /**
+   * The write seam: POST a JSON body and validate the response through the same
+   * zod-schema seam as `get`. Non-OK statuses map through `mapError`; a shape
+   * mismatch becomes a non-leaky `MiteApiError` of kind `shape`. Write tools
+   * reach this via `ToolDeps.getClient()`.
+   */
+  async post<S extends ZodType>(
+    path: string,
+    body: unknown,
+    schema: S,
+  ): Promise<zInfer<S>> {
+    const response = await this.fetchFn(`${this.baseUrl}${path}`, {
+      method: "POST",
+      headers: {
+        "X-MiteApiKey": this.apiKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    return this.validate(response, schema);
+  }
+
+  private async validate<S extends ZodType>(
+    response: Response,
+    schema: S,
+  ): Promise<zInfer<S>> {
     if (!response.ok) {
       throw mapError(response.status);
     }

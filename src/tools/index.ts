@@ -1,5 +1,6 @@
 import { tools as lookupTools } from "./lookup/index.js";
 import { tools as pingTools } from "./ping/index.js";
+import { tools as timeEntriesTools } from "./time-entries/index.js";
 import type { ToolDefinition } from "./types.js";
 import { tools as whoamiTools } from "./whoami/index.js";
 
@@ -11,5 +12,6 @@ import { tools as whoamiTools } from "./whoami/index.js";
 export const tools: ToolDefinition[] = [
   ...pingTools,
   ...whoamiTools,
+  ...timeEntriesTools,
   ...lookupTools,
 ];

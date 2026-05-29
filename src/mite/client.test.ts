@@ -30,6 +30,74 @@ describe("MiteClient.get", () => {
   });
 });
 
+describe("MiteClient.post", () => {
+  it("POSTs JSON with X-MiteApiKey and Content-Type, then returns parsed JSON", async () => {
+    const fetchFn = vi.fn<typeof fetch>(
+      async () =>
+        new Response(JSON.stringify({ time_entry: { id: 7 } }), {
+          status: 201,
+        }),
+    );
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn,
+    });
+
+    const schema = z.looseObject({
+      time_entry: z.looseObject({ id: z.number() }),
+    });
+    const body = { time_entry: { minutes: 90 } };
+    const result = await client.post("/time_entries.json", body, schema);
+
+    expect(result).toEqual({ time_entry: { id: 7 } });
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe("https://acme.mite.de/time_entries.json");
+    expect(init?.method).toBe("POST");
+    const headers = init?.headers as Record<string, string>;
+    expect(headers["X-MiteApiKey"]).toBe("secret-key");
+    expect(headers["Content-Type"]).toBe("application/json");
+    expect(init?.body).toBe(JSON.stringify(body));
+  });
+
+  it("maps a non-OK status through mapError without leaking the body", async () => {
+    const SENTINEL = "RAW_UPSTREAM_SECRET_BODY";
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(422, SENTINEL),
+    });
+
+    const error = (await client
+      .post("/time_entries.json", {}, z.unknown())
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error).toBeInstanceOf(MiteApiError);
+    expect(error.kind).toBe("validation");
+    expect(error.message).not.toContain(SENTINEL);
+  });
+
+  it("throws a non-leaky shape error when the response fails the schema", async () => {
+    const SENTINEL = "RAW_UPSTREAM_SECRET_BODY";
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(201, JSON.stringify({ time_entry: SENTINEL })),
+    });
+    const schema = z.looseObject({
+      time_entry: z.looseObject({ id: z.number() }),
+    });
+
+    const error = (await client
+      .post("/time_entries.json", {}, schema)
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error).toBeInstanceOf(MiteApiError);
+    expect(error.kind).toBe("shape");
+    expect(error.message).not.toContain(SENTINEL);
+  });
+});
+
 describe("MiteClient.fromEnv", () => {
   it("builds a client from MITE_ACCOUNT and MITE_API_KEY", async () => {
     const fetchFn = vi.fn<typeof fetch>(

@@ -1,8 +1,7 @@
 import * as z from "zod/v4";
 
-import type { MiteClient } from "../../mite/client.js";
 import { ProjectsResponse } from "../../mite/schemas.js";
-import type { ToolDefinition } from "../types.js";
+import type { ToolDefinition, ToolRun } from "../types.js";
 import { lookupResources } from "./lookup.js";
 
 const FindProjectInput = z.object({
@@ -25,11 +24,11 @@ export interface ProjectCandidate {
   customer_name: string | null;
 }
 
-export async function findProject(
-  client: Pick<MiteClient, "get">,
-  input: FindProjectInput,
-): Promise<ProjectCandidate[]> {
-  const wrapped = await lookupResources(client, {
+export const findProject: ToolRun<
+  FindProjectInput,
+  ProjectCandidate[]
+> = async (input, deps) => {
+  const wrapped = await lookupResources(deps.getClient(), {
     resource: "projects",
     schema: ProjectsResponse,
     name: input.name,
@@ -46,7 +45,7 @@ export async function findProject(
     customer_id: project.customer_id ?? null,
     customer_name: project.customer_name ?? null,
   }));
-}
+};
 
 export const findProjectTool: ToolDefinition<FindProjectInput> = {
   name: "find_project",
@@ -54,5 +53,5 @@ export const findProjectTool: ToolDefinition<FindProjectInput> = {
   description:
     "Resolve a project name to mite project IDs. Matches partially and case-insensitively; returns all candidates ({ id, name, customer_id, customer_name }). Archived projects are excluded unless includeArchived is set; pass customer_id to narrow to one customer's projects.",
   inputSchema: FindProjectInput.shape,
-  run: (input, deps) => findProject(deps.getClient(), input),
+  run: findProject,
 };

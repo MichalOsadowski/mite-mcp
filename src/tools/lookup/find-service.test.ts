@@ -9,7 +9,9 @@ describe("findService", () => {
       { service: { id: 2, name: "Web Development" } },
     ]);
 
-    const result = await findService({ get } as never, { name: "develop" });
+    const result = await findService({ name: "develop" }, {
+      getClient: () => ({ get }),
+    } as never);
 
     expect(get).toHaveBeenCalledWith(
       "/services.json?name=develop",
@@ -32,13 +34,18 @@ describe("findService", () => {
       throw new Error(`unexpected path ${path}`);
     });
 
-    const active = await findService({ get } as never, { name: "dev" });
+    const active = await findService({ name: "dev" }, {
+      getClient: () => ({ get }),
+    } as never);
     expect(active).toEqual([{ id: 1, name: "Development" }]);
 
-    const withArchived = await findService({ get } as never, {
-      name: "dev",
-      includeArchived: true,
-    });
+    const withArchived = await findService(
+      {
+        name: "dev",
+        includeArchived: true,
+      },
+      { getClient: () => ({ get }) } as never,
+    );
     expect(withArchived).toEqual([
       { id: 1, name: "Development" },
       { id: 9, name: "Legacy Dev" },
@@ -48,7 +55,9 @@ describe("findService", () => {
   it("returns an empty array when nothing matches", async () => {
     const get = vi.fn(async () => []);
 
-    const result = await findService({ get } as never, { name: "nope" });
+    const result = await findService({ name: "nope" }, {
+      getClient: () => ({ get }),
+    } as never);
 
     expect(result).toEqual([]);
   });

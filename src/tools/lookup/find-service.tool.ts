@@ -1,8 +1,7 @@
 import * as z from "zod/v4";
 
-import type { MiteClient } from "../../mite/client.js";
 import { ServicesResponse } from "../../mite/schemas.js";
-import type { ToolDefinition } from "../types.js";
+import type { ToolDefinition, ToolRun } from "../types.js";
 import { lookupResources } from "./lookup.js";
 
 const FindServiceInput = z.object({
@@ -19,11 +18,11 @@ export interface ServiceCandidate {
   name: string;
 }
 
-export async function findService(
-  client: Pick<MiteClient, "get">,
-  input: FindServiceInput,
-): Promise<ServiceCandidate[]> {
-  const wrapped = await lookupResources(client, {
+export const findService: ToolRun<
+  FindServiceInput,
+  ServiceCandidate[]
+> = async (input, deps) => {
+  const wrapped = await lookupResources(deps.getClient(), {
     resource: "services",
     schema: ServicesResponse,
     name: input.name,
@@ -33,7 +32,7 @@ export async function findService(
     id: service.id,
     name: service.name,
   }));
-}
+};
 
 export const findServiceTool: ToolDefinition<FindServiceInput> = {
   name: "find_service",
@@ -41,5 +40,5 @@ export const findServiceTool: ToolDefinition<FindServiceInput> = {
   description:
     "Resolve a service name to mite service IDs. Matches partially and case-insensitively; returns all candidates ({ id, name }). Archived services are excluded unless includeArchived is set.",
   inputSchema: FindServiceInput.shape,
-  run: (input, deps) => findService(deps.getClient(), input),
+  run: findService,
 };

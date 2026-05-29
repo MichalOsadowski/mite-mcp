@@ -22,7 +22,9 @@ describe("getTimeEntry", () => {
   it("fetches a single entry by id and shapes minutes and hours", async () => {
     const get = vi.fn(async () => ({ time_entry: entry }));
 
-    const result = await getTimeEntry({ id: 36159117 }, { get } as never);
+    const result = await getTimeEntry({ id: 36159117 }, {
+      getClient: () => ({ get }),
+    } as never);
 
     expect(get).toHaveBeenCalledWith(
       "/time_entries/36159117.json",

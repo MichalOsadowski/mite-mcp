@@ -25,7 +25,9 @@ describe("reportTime", () => {
       },
     ]);
 
-    const result = await reportTime({ group_by: "project" }, { get } as never);
+    const result = await reportTime({ group_by: "project" }, {
+      getClient: () => ({ get }),
+    } as never);
 
     expect(get).toHaveBeenCalledWith(
       "/time_entries.json?group_by=project",
@@ -64,7 +66,7 @@ describe("reportTime", () => {
     ]);
 
     const result = await reportTime({ group_by: "customer,project" }, {
-      get,
+      getClient: () => ({ get }),
     } as never);
 
     expect(get).toHaveBeenCalledWith(
@@ -98,7 +100,7 @@ describe("reportTime", () => {
         user_id: 26144,
         billable: true,
       },
-      { get } as never,
+      { getClient: () => ({ get }) } as never,
     );
 
     const path = get.mock.calls[0]![0] as string;
@@ -118,7 +120,9 @@ describe("reportTime", () => {
   it("forwards the `at` date keyword", async () => {
     const get = vi.fn<(path: string) => Promise<unknown[]>>(async () => []);
 
-    await reportTime({ group_by: "day", at: "this_month" }, { get } as never);
+    await reportTime({ group_by: "day", at: "this_month" }, {
+      getClient: () => ({ get }),
+    } as never);
 
     const path = get.mock.calls[0]![0] as string;
     const query = new URL(path, "https://acme.mite.de").searchParams;

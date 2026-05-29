@@ -1,8 +1,7 @@
 import * as z from "zod/v4";
 
-import type { MiteClient } from "../../mite/client.js";
 import { CustomersResponse } from "../../mite/schemas.js";
-import type { ToolDefinition } from "../types.js";
+import type { ToolDefinition, ToolRun } from "../types.js";
 import { lookupResources } from "./lookup.js";
 
 const FindCustomerInput = z.object({
@@ -19,11 +18,11 @@ export interface CustomerCandidate {
   name: string;
 }
 
-export async function findCustomer(
-  client: Pick<MiteClient, "get">,
-  input: FindCustomerInput,
-): Promise<CustomerCandidate[]> {
-  const wrapped = await lookupResources(client, {
+export const findCustomer: ToolRun<
+  FindCustomerInput,
+  CustomerCandidate[]
+> = async (input, deps) => {
+  const wrapped = await lookupResources(deps.getClient(), {
     resource: "customers",
     schema: CustomersResponse,
     name: input.name,
@@ -33,7 +32,7 @@ export async function findCustomer(
     id: customer.id,
     name: customer.name,
   }));
-}
+};
 
 export const findCustomerTool: ToolDefinition<FindCustomerInput> = {
   name: "find_customer",
@@ -41,5 +40,5 @@ export const findCustomerTool: ToolDefinition<FindCustomerInput> = {
   description:
     "Resolve a customer name to mite customer IDs. Matches partially and case-insensitively; returns all candidates ({ id, name }). Archived customers are excluded unless includeArchived is set.",
   inputSchema: FindCustomerInput.shape,
-  run: (input, deps) => findCustomer(deps.getClient(), input),
+  run: findCustomer,
 };

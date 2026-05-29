@@ -1,8 +1,7 @@
 import * as z from "zod/v4";
 
-import type { MiteClient } from "../../mite/client.js";
 import { TimeEntryListResponse } from "../../mite/schemas.js";
-import type { ToolDefinition } from "../types.js";
+import type { ToolDefinition, ToolRun } from "../types.js";
 import { shapeEntry, type ShapedEntry } from "./entry.js";
 
 /**
@@ -42,16 +41,15 @@ const buildQuery = (input: ListInput): string => {
   return query ? `?${query}` : "";
 };
 
-export async function listTimeEntries(
-  input: ListInput,
-  client: Pick<MiteClient, "get">,
-): Promise<ListTimeEntriesResult> {
-  const wrapped = await client.get(
-    `/time_entries.json${buildQuery(input)}`,
-    TimeEntryListResponse,
-  );
+export const listTimeEntries: ToolRun<
+  ListInput,
+  ListTimeEntriesResult
+> = async (input, deps) => {
+  const wrapped = await deps
+    .getClient()
+    .get(`/time_entries.json${buildQuery(input)}`, TimeEntryListResponse);
   return { entries: wrapped.map((w) => shapeEntry(w.time_entry)) };
-}
+};
 
 export const listTimeEntriesTool: ToolDefinition<ListInput> = {
   name: "list_time_entries",
@@ -65,5 +63,5 @@ export const listTimeEntriesTool: ToolDefinition<ListInput> = {
     "totals or aggregation use the reporting tool (report_time), which " +
     "aggregates server-side and is correct across pages.",
   inputSchema: ListInput.shape,
-  run: (input, deps) => listTimeEntries(input, deps.getClient()),
+  run: listTimeEntries,
 };

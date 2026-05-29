@@ -98,6 +98,90 @@ describe("MiteClient.post", () => {
   });
 });
 
+describe("MiteClient.patch", () => {
+  it("PATCHes JSON with X-MiteApiKey and Content-Type, then resolves (empty 200 body)", async () => {
+    const fetchFn = vi.fn<typeof fetch>(
+      async () => new Response("", { status: 200 }),
+    );
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn,
+    });
+
+    const body = { time_entry: { minutes: 90 } };
+    await expect(
+      client.patch("/time_entries/7.json", body),
+    ).resolves.toBeUndefined();
+
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe("https://acme.mite.de/time_entries/7.json");
+    expect(init?.method).toBe("PATCH");
+    const headers = init?.headers as Record<string, string>;
+    expect(headers["X-MiteApiKey"]).toBe("secret-key");
+    expect(headers["Content-Type"]).toBe("application/json");
+    expect(init?.body).toBe(JSON.stringify(body));
+  });
+
+  it("maps a non-OK status (e.g. 423 locked) through mapError without leaking the body", async () => {
+    const SENTINEL = "RAW_UPSTREAM_SECRET_BODY";
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(423, SENTINEL),
+    });
+
+    const error = (await client
+      .patch("/time_entries/7.json", {})
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error).toBeInstanceOf(MiteApiError);
+    expect(error.kind).toBe("locked");
+    expect(error.message).not.toContain(SENTINEL);
+  });
+});
+
+describe("MiteClient.delete", () => {
+  it("DELETEs with X-MiteApiKey and resolves (empty 200 body)", async () => {
+    const fetchFn = vi.fn<typeof fetch>(
+      async () => new Response("", { status: 200 }),
+    );
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn,
+    });
+
+    await expect(
+      client.delete("/time_entries/7.json"),
+    ).resolves.toBeUndefined();
+
+    const [url, init] = fetchFn.mock.calls[0];
+    expect(url).toBe("https://acme.mite.de/time_entries/7.json");
+    expect(init?.method).toBe("DELETE");
+    expect((init?.headers as Record<string, string>)["X-MiteApiKey"]).toBe(
+      "secret-key",
+    );
+  });
+
+  it("maps a non-OK status (e.g. 423 locked) through mapError without leaking the body", async () => {
+    const SENTINEL = "RAW_UPSTREAM_SECRET_BODY";
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(423, SENTINEL),
+    });
+
+    const error = (await client
+      .delete("/time_entries/7.json")
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error).toBeInstanceOf(MiteApiError);
+    expect(error.kind).toBe("locked");
+    expect(error.message).not.toContain(SENTINEL);
+  });
+});
+
 describe("MiteClient.fromEnv", () => {
   it("builds a client from MITE_ACCOUNT and MITE_API_KEY", async () => {
     const fetchFn = vi.fn<typeof fetch>(

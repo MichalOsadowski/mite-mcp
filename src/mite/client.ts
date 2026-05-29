@@ -122,6 +122,46 @@ export class MiteClient {
     return this.validate(response, schema);
   }
 
+  /**
+   * Partial update of a resource. mite replies `200` with an EMPTY body, so
+   * there is nothing to validate beyond the status — unlike `get`/`post`, this
+   * verb does not run a zod schema (an empty body would fail `response.json()`).
+   * Non-OK statuses map through `mapError`; a locked entry surfaces as kind
+   * `locked` (423). Reached by write tools via `ToolDeps.getClient()`.
+   */
+  async patch(path: string, body: unknown): Promise<void> {
+    const response = await this.fetchFn(`${this.baseUrl}${path}`, {
+      method: "PATCH",
+      headers: {
+        "X-MiteApiKey": this.apiKey,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw mapError(response.status);
+    }
+  }
+
+  /**
+   * Delete a resource. Like `patch`, mite replies `200` with an EMPTY body, so
+   * only the status is checked (no schema). Non-OK statuses map through
+   * `mapError`; a locked entry surfaces as kind `locked` (423).
+   */
+  async delete(path: string): Promise<void> {
+    const response = await this.fetchFn(`${this.baseUrl}${path}`, {
+      method: "DELETE",
+      headers: {
+        "X-MiteApiKey": this.apiKey,
+        Accept: "application/json",
+      },
+    });
+    if (!response.ok) {
+      throw mapError(response.status);
+    }
+  }
+
   private async validate<S extends ZodType>(
     response: Response,
     schema: S,

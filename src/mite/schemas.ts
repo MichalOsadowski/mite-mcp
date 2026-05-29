@@ -59,3 +59,35 @@ export const TimeEntryResponse = z.looseObject({
 export const TimeEntryListResponse = z.array(TimeEntryResponse);
 
 export type TimeEntry = z.infer<typeof TimeEntry>;
+ * Lookup resources. mite's list endpoints return an array of single-key-wrapped
+ * objects — e.g. `[{ "project": { … } }, …]` — so each resource has an inner
+ * schema (validate only the fields we consume) and a response schema for the
+ * wrapped array, which is what we hand to `client.get`.
+ */
+
+export const Project = z.looseObject({
+  id: z.number(),
+  name: z.string(),
+  // A project may have no customer; mite may send null or omit the key, so allow
+  // both (nullable + optional) to keep customer-less projects from shape-erroring.
+  customer_id: z.number().nullish(),
+  customer_name: z.string().nullish(),
+});
+
+export const Service = z.looseObject({
+  id: z.number(),
+  name: z.string(),
+});
+
+export const Customer = z.looseObject({
+  id: z.number(),
+  name: z.string(),
+});
+
+export const ProjectsResponse = z.array(z.looseObject({ project: Project }));
+export const ServicesResponse = z.array(z.looseObject({ service: Service }));
+export const CustomersResponse = z.array(z.looseObject({ customer: Customer }));
+
+export type Project = z.infer<typeof Project>;
+export type Service = z.infer<typeof Service>;
+export type Customer = z.infer<typeof Customer>;

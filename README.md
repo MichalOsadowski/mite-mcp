@@ -90,8 +90,8 @@ scope key explicitly (step 2), which is the most reliable option:
 {
   "mcpServers": {
     "mite": {
-      "command": "npx",
-      "args": ["-y", "mite-mcp"],
+      "command": "node",
+      "args": ["/absolute/path/to/mite-mcp/dist/index.js"],
       "env": {
         "MITE_ACCOUNT": "your-account",
         "MITE_API_KEY": "your-api-key",
@@ -102,5 +102,7 @@ scope key explicitly (step 2), which is the most reliable option:
 }
 ```
 
-`MITE_ACCOUNT` is your `{account}.mite.de` subdomain and `MITE_API_KEY` your mite API key. You can
-omit `MITE_DEFAULT_SCOPE` and let the scope fall through to the git remote / repo path instead.
+Build first with `npm run build`, then point `args` at the built `dist/index.js` (the same entry
+`npm start` runs). `MITE_ACCOUNT` is your `{account}.mite.de` subdomain and `MITE_API_KEY` your mite
+API key. You can omit `MITE_DEFAULT_SCOPE` and let the scope fall through to the git remote / repo
+path instead.

@@ -2,6 +2,40 @@
 
 MCP server in TypeScript to allow agents to interact with mite.de.
 
+## Use as an MCP server
+
+Published to npm, so no clone or build is needed — point your MCP client at it with `npx` and supply
+your own credentials. `MITE_ACCOUNT` is your `{account}.mite.de` subdomain; `MITE_API_KEY` is your
+mite API key (mite → your user menu → API key; an admin may need to enable API access).
+
+```json
+{
+  "mcpServers": {
+    "mite": {
+      "command": "npx",
+      "args": ["-y", "mite-mcp"],
+      "env": {
+        "MITE_ACCOUNT": "your-account",
+        "MITE_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+In Claude Code, the equivalent one-liner:
+
+```bash
+claude mcp add mite \
+  --env MITE_ACCOUNT=your-account \
+  --env MITE_API_KEY=your-api-key \
+  -- npx -y mite-mcp
+```
+
+Verify with `/mcp` (Claude Code) and try the `whoami` tool first — it confirms your credentials and
+account. For pinning a per-repo default project/service, see [Per-repo defaults](#per-repo-defaults)
+below (set `MITE_DEFAULT_SCOPE` and run against the local `dist/index.js`).
+
 ## Setup
 
 ```bash
@@ -106,3 +140,17 @@ Build first with `npm run build`, then point `args` at the built `dist/index.js`
 `npm start` runs). `MITE_ACCOUNT` is your `{account}.mite.de` subdomain and `MITE_API_KEY` your mite
 API key. You can omit `MITE_DEFAULT_SCOPE` and let the scope fall through to the git remote / repo
 path instead.
+
+## Releases
+
+Releases are automated with [semantic-release](https://semantic-release.gitbook.io/) on every push
+to `main` (`.github/workflows/release.yml`). The version bump is derived from
+[Conventional Commit](https://www.conventionalcommits.org/) messages since the last release:
+
+- `fix:` → patch, `feat:` → minor, `feat!:` / `BREAKING CHANGE:` → major;
+- `docs:` / `chore:` / `refactor:` / `test:` → no release.
+
+When a release is warranted the pipeline bumps `package.json`, updates `CHANGELOG.md`, tags the
+commit, publishes to npm, and creates a GitHub release — no manual step. The only prerequisite is an
+npm **automation** token stored as the `NPM_TOKEN` repository secret (`GITHUB_TOKEN` is provided
+automatically). Do not bump the version by hand; the pipeline owns it.

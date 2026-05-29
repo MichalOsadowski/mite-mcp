@@ -38,6 +38,32 @@ the mite mapping is noted.
 - **Write safety** is risk-tiered: reversible ops act immediately, destructive ops are dry-run by
   default. See [ADR-0004](docs/adr/0004-create-immediate-other-writes-dry-run.md).
 
+## Architecture
+
+A shared kernel first; resource tools sit on top of it. Each module has one clear purpose.
+
+```
+src/
+  mite/
+    client.ts     # fetch, auth, pagination, error mapping (401/404/422/423/5xx)
+    schemas.ts    # zod: mite resources + tool inputs
+    format.ts     # response shaping, minutes<->hours, dates
+    defaults.ts   # per-scope defaults store (JSON file, atomic write) + scope resolution
+  tools/
+    timeEntries.ts  # list / get / create / update / delete
+    tracker.ts      # get / start / stop
+    resolve.ts      # find_project / find_service / find_customer / whoami
+    defaults.ts     # set_default / get_default / clear_default / list_defaults
+    register.ts     # registers all tools on the server
+  index.ts          # server bootstrap (thin)
+```
+
+**Layering rule:** `tools/*` never call `fetch` directly — only via `MiteClient`. `MiteClient` knows
+nothing about MCP. This keeps tools testable against a mocked client.
+
+The authoritative reference for the upstream API is mite's own docs: <https://mite.de/en/api/>.
+We do not snapshot endpoint shapes here — they live in mite's docs and are cited per issue where needed.
+
 ## Decisions
 
 See `docs/adr/` for the architecture decision records.

@@ -59,6 +59,8 @@ export const TimeEntryResponse = z.looseObject({
 export const TimeEntryListResponse = z.array(TimeEntryResponse);
 
 export type TimeEntry = z.infer<typeof TimeEntry>;
+
+/**
  * Lookup resources. mite's list endpoints return an array of single-key-wrapped
  * objects — e.g. `[{ "project": { … } }, …]` — so each resource has an inner
  * schema (validate only the fields we consume) and a response schema for the

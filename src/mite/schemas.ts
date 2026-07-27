@@ -28,6 +28,14 @@ export type MiteUser = z.infer<typeof MiteUser>;
 export type MiteAccount = z.infer<typeof MiteAccount>;
 
 /**
+ * The `user_id` filter, shared by every tool that scopes a read to one user.
+ * mite accepts either a numeric id or the `current` keyword for the
+ * authenticated user, so the two shapes live here once rather than drifting
+ * apart per tool (`list_time_entries` and `report_time` both use it).
+ */
+export const UserIdFilter = z.union([z.number(), z.literal("current")]);
+
+/**
  * A mite time entry. Permissive (`z.looseObject`): we validate only the fields
  * this server consumes — mite may send more. Names (`project_name`,
  * `service_name`, `customer_name`) are nullable upstream when the entry has no

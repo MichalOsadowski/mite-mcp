@@ -25,7 +25,7 @@ the mite mapping is noted.
 | **Tracker**           | The single running timer per user. Started/stopped against an existing time entry.                                                                                                                       |
 | **Locked**            | An entry an admin has frozen; edits/deletes return `423` and are refused without `force` (out of scope).                                                                                                 |
 | **Billable**          | Whether a time entry counts toward billable revenue.                                                                                                                                                     |
-| **Revenue**           | Money value of entries, computed by mite from rates. We report it, never compute it.                                                                                                                     |
+| **Revenue**           | Money value of entries, computed by mite from rates. We report it, never compute it. `null` in a report group means mite computed none (unknown), not zero earned.                                       |
 | **Grouping (report)** | Server-side aggregation via `group_by` (project/customer/service/user/day/week/month/year). The only sanctioned way to total time. See [ADR-0003](docs/adr/0003-minutes-canonical-hours-convenience.md). |
 | **Scope**             | The key binding a context (a repo) to default project/service. Derived from environment, never authored by the agent. See [ADR-0005](docs/adr/0005-per-repo-scope-defaults.md).                          |
 | **Default**           | The `{project_id, service_id}` stored for a scope, so the dominant create flow needs no IDs.                                                                                                             |
@@ -81,7 +81,12 @@ and the tools testable against mocks, with error→result shaping living in one 
 **Validation lives behind the client seam:** `get(path, schema)` parses the response against a zod schema
 and returns validated data — tools pass a schema, they do not `.parse()` themselves. A shape mismatch
 becomes a `MiteApiError` (kind `shape`) with a non-leaky message, so it surfaces through the adapter like
-the mapped HTTP statuses instead of an opaque fallback.
+the mapped HTTP statuses instead of an opaque fallback. That message names the failing zod issues
+(`path: message`, capped) so a drift is diagnosable without curling mite: paths come from _our_ schema
+field names and array indices, messages name expected/received _types_ — never a value or key from the
+upstream body. For that to hold, a response schema must not use `strictObject` (its unrecognized-key
+issues name upstream keys) or `z.record` (upstream keys become path segments); `looseObject` — what
+every response schema here uses — and plain `object` both drop unknown keys silently and are safe.
 
 **Tool organization:** a directory per concept, tool and test co-located. One tool per `<name>.tool.ts`
 file (kebab-case of the tool's snake_case name: `list_time_entries` → `list-time-entries.tool.ts`); each

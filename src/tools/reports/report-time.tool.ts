@@ -1,21 +1,27 @@
 import * as z from "zod/v4";
 
 import { minutesToHours, passthroughDate } from "../../mite/format.js";
+import { UserIdFilter } from "../../mite/schemas.js";
 import type { ToolDefinition, ToolRun } from "../types.js";
 
 /**
  * Permissive grouped-report schema. mite returns an array of envelopes, each a
  * `time_entry_group` carrying `minutes` and `revenue` plus dimension-specific
  * identity fields (e.g. `project_id`/`project_name`, or `from`/`to` for
- * temporal groupings). We validate only the two universally-present numeric
- * fields and let every identity field pass through untouched. See ADR-0003:
- * revenue is reported as mite computes it, never recomputed locally.
+ * temporal groupings). We validate only `minutes` and `revenue` and let every
+ * identity field pass through untouched. See ADR-0003: revenue is reported as
+ * mite computes it, never recomputed locally.
+ *
+ * `revenue` is `nullish`: mite sends `revenue: null` for every group whenever it
+ * computes no revenue (e.g. entries with no rate), which used to shape-error the
+ * whole report. `nullish` rather than `nullable` so an omitted key survives too;
+ * only `null` has been observed.
  */
 const ReportResponse = z.array(
   z.looseObject({
     time_entry_group: z.looseObject({
       minutes: z.number(),
-      revenue: z.number(),
+      revenue: z.number().nullish(),
     }),
   }),
 );
@@ -40,7 +46,9 @@ const ReportTimeInput = z.object({
   project_id: z.number().optional().describe("Scope to a single project."),
   customer_id: z.number().optional().describe("Scope to a single customer."),
   service_id: z.number().optional().describe("Scope to a single service."),
-  user_id: z.number().optional().describe("Scope to a single user."),
+  user_id: UserIdFilter.optional().describe(
+    "Scope to a single user id, or 'current' for the authenticated user.",
+  ),
   billable: z
     .boolean()
     .optional()
@@ -48,11 +56,14 @@ const ReportTimeInput = z.object({
 });
 export type ReportTimeInput = z.infer<typeof ReportTimeInput>;
 
-/** A single grouped total: its identity fields plus minutes, hours, revenue. */
+/**
+ * A single grouped total: its identity fields plus minutes, hours, revenue.
+ * `revenue` is `null` when mite computed none — not zero earned.
+ */
 export type ReportGroup = Record<string, unknown> & {
   minutes: number;
   hours: number;
-  revenue: number;
+  revenue: number | null;
 };
 
 export const reportTime: ToolRun<ReportTimeInput, ReportGroup[]> = async (
@@ -87,7 +98,8 @@ export const reportTime: ToolRun<ReportTimeInput, ReportGroup[]> = async (
       ...identity,
       minutes: time_entry_group.minutes,
       hours: minutesToHours(time_entry_group.minutes),
-      revenue: time_entry_group.revenue,
+      // Normalise an absent revenue to an explicit null; never recomputed here.
+      revenue: time_entry_group.revenue ?? null,
     };
   });
 };
@@ -98,9 +110,13 @@ export const reportTimeTool: ToolDefinition<ReportTimeInput> = {
   description:
     "Grouped time totals via mite's server-side group_by. Group by any of " +
     "project, customer, service, user, day, week, month, year — combine them " +
-    "as a comma-separated list whose order controls sort. Each group reports " +
-    "minutes, hours, and revenue (revenue as computed by mite). This is the " +
-    "only sanctioned way to total time; never sum individual entries.",
+    "as a comma-separated list whose order controls sort. Scope with the same " +
+    "date and id filters as list_time_entries (user_id accepts 'current'), " +
+    "but no paging or sorting options. Each group " +
+    "reports minutes, hours, and revenue (revenue as computed by mite). Revenue is " +
+    "null when mite computed none for the group (e.g. no rate on the " +
+    "entries) — that means unknown, not zero earned. This is the only " +
+    "sanctioned way to total time; never sum individual entries.",
   inputSchema: ReportTimeInput.shape,
   run: reportTime,
 };

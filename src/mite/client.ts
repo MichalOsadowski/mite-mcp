@@ -1,4 +1,4 @@
-import type { ZodType, infer as zInfer } from "zod/v4";
+import type { ZodError, ZodType, infer as zInfer } from "zod/v4";
 
 export type MiteErrorKind =
   | "auth"
@@ -55,6 +55,32 @@ const mapError = (status: number): MiteApiError => {
     "unknown",
     `mite request failed (${status}).`,
   );
+};
+
+/** How many zod issues a shape error names before it summarises the rest. */
+const MAX_SHAPE_ISSUES = 3;
+
+/**
+ * Turn a failed parse into `path: message` per issue (capped), so a shape drift
+ * is a one-look diagnosis instead of an opaque string that has to be reproduced
+ * with curl.
+ *
+ * This keeps the non-leaky invariant: a zod issue's `path` is built from OUR
+ * schema's field names and array indices, and its `message` names expected and
+ * received *types*, never a value from the upstream body. That holds because
+ * every response schema here is a `looseObject` — unknown upstream keys are
+ * dropped, not reported. A `strictObject` (unrecognized-key issues name the key)
+ * or a `z.record` (upstream keys become path segments) on a response schema
+ * would break it and needs its own redaction.
+ */
+const describeIssues = (error: ZodError): string => {
+  const shown = error.issues.slice(0, MAX_SHAPE_ISSUES).map((issue) => {
+    const path = issue.path.map(String).join(".");
+    return path ? `${path}: ${issue.message}` : issue.message;
+  });
+  const omitted = error.issues.length - shown.length;
+  if (omitted > 0) shown.push(`(+${omitted} more)`);
+  return shown.join("; ");
 };
 
 export interface MiteClientOptions {
@@ -206,7 +232,7 @@ export class MiteClient {
       throw new MiteApiError(
         response.status,
         "shape",
-        "mite returned an unexpected response shape.",
+        `mite returned an unexpected response shape. ${describeIssues(parsed.error)}`,
       );
     }
     return parsed.data;

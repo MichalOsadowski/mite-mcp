@@ -1,6 +1,6 @@
 {
   "name": "mite-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "MCP to allow agents interact with mite.de",
   "main": "dist/index.js",
   "bin": {

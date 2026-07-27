@@ -1,3 +1,9 @@
+## [1.0.2](https://github.com/MichalOsadowski/mite-mcp/compare/v1.0.1...v1.0.2) (2026-07-27)
+
+### Bug Fixes
+
+- **reports:** accept mite's revenue: null so report_time works on every grouping ([b81a960](https://github.com/MichalOsadowski/mite-mcp/commit/b81a960646be86fa5afad178e167022218c62b63)), closes [#27](https://github.com/MichalOsadowski/mite-mcp/issues/27)
+
 ## [1.0.1](https://github.com/MichalOsadowski/mite-mcp/compare/v1.0.0...v1.0.1) (2026-05-29)
 
 ### Bug Fixes

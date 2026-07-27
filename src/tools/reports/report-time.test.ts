@@ -1,6 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
+import * as z from "zod/v4";
 
+import { MiteClient } from "../../mite/client.js";
 import { reportTime, reportTimeTool } from "./report-time.tool.js";
+
+/**
+ * The other cases here mock `client.get`, which never runs `ReportResponse`. To
+ * exercise the real schema, this builds a genuine `MiteClient` over a canned
+ * `fetchFn` — a shape mismatch then surfaces as it would against mite itself.
+ */
+const clientReturning = (body: unknown) =>
+  new MiteClient({
+    account: "acme",
+    apiKey: "secret-key",
+    fetchFn: async () => new Response(JSON.stringify(body), { status: 200 }),
+  });
 
 describe("reportTime", () => {
   it("groups by a single dimension via group_by and reports minutes, hours, revenue", async () => {
@@ -117,6 +131,56 @@ describe("reportTime", () => {
     });
   });
 
+  it("accepts a group mite reports with revenue: null, surfacing it as null through the real response schema", async () => {
+    const client = clientReturning([
+      {
+        time_entry_group: {
+          minutes: 480,
+          revenue: null,
+          day: "2026-07-24",
+          time_entries_params: { at: "2026-07-24" },
+        },
+      },
+    ]);
+
+    const result = await reportTime({ group_by: "day" }, {
+      getClient: () => client,
+    } as never);
+
+    expect(result).toEqual([
+      { day: "2026-07-24", minutes: 480, hours: 8, revenue: null },
+    ]);
+  });
+
+  it("accepts a group where mite omits revenue entirely, normalising it to null", async () => {
+    const client = clientReturning([
+      { time_entry_group: { minutes: 60, project_id: 1 } },
+    ]);
+
+    const result = await reportTime({ group_by: "project" }, {
+      getClient: () => client,
+    } as never);
+
+    expect(result).toEqual([
+      { project_id: 1, minutes: 60, hours: 1, revenue: null },
+    ]);
+  });
+
+  it("forwards the `current` user_id keyword, matching list_time_entries", async () => {
+    const get = vi.fn<(path: string) => Promise<unknown[]>>(async () => []);
+
+    await reportTime({ group_by: "month", user_id: "current" }, {
+      getClient: () => ({ get }),
+    } as never);
+
+    const path = get.mock.calls[0]![0] as string;
+    const query = new URL(path, "https://acme.mite.de").searchParams;
+    expect(Object.fromEntries(query)).toEqual({
+      group_by: "month",
+      user_id: "current",
+    });
+  });
+
   it("forwards the `at` date keyword", async () => {
     const get = vi.fn<(path: string) => Promise<unknown[]>>(async () => []);
 
@@ -134,6 +198,22 @@ describe("reportTime", () => {
 });
 
 describe("reportTimeTool", () => {
+  it("registers a user_id that accepts the `current` keyword as well as an id", () => {
+    // Through the registered inputSchema, not the handler: the handler's own
+    // tests pass their input as `never`, which bypasses validation entirely.
+    const input = z.object(reportTimeTool.inputSchema);
+
+    expect(
+      input.safeParse({ group_by: "day", user_id: "current" }).success,
+    ).toBe(true);
+    expect(input.safeParse({ group_by: "day", user_id: 26144 }).success).toBe(
+      true,
+    );
+    expect(
+      input.safeParse({ group_by: "day", user_id: "nobody" }).success,
+    ).toBe(false);
+  });
+
   it("is named report_time and delegates run to the handler with the lazy client", async () => {
     expect(reportTimeTool.name).toBe("report_time");
 

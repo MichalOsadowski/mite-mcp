@@ -1,6 +1,6 @@
 import * as z from "zod/v4";
 
-import { TimeEntryListResponse } from "../../mite/schemas.js";
+import { TimeEntryListResponse, UserIdFilter } from "../../mite/schemas.js";
 import type { ToolDefinition, ToolRun } from "../types.js";
 import { shapeEntry, type ShapedEntry } from "./entry.js";
 
@@ -16,7 +16,7 @@ const ListInput = z.object({
   project_id: z.number().optional(),
   service_id: z.number().optional(),
   customer_id: z.number().optional(),
-  user_id: z.union([z.number(), z.literal("current")]).optional(),
+  user_id: UserIdFilter.optional(),
   billable: z.boolean().optional(),
   note: z.string().optional(),
   sort: z.string().optional(),

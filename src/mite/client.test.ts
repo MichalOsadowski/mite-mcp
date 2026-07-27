@@ -328,6 +328,86 @@ describe("MiteClient.get schema validation", () => {
     expect(error.kind).toBe("shape");
     expect(error.message).not.toContain(SENTINEL);
   });
+
+  it("names the offending path and the expected/received types so a shape drift is diagnosable", async () => {
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(
+        200,
+        JSON.stringify([{ time_entry_group: { minutes: 480, revenue: null } }]),
+      ),
+    });
+    const schema = z.array(
+      z.looseObject({
+        time_entry_group: z.looseObject({
+          minutes: z.number(),
+          revenue: z.number(),
+        }),
+      }),
+    );
+
+    const error = (await client
+      .get("/time_entries.json", schema)
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error.kind).toBe("shape");
+    expect(error.message).toContain("0.time_entry_group.revenue");
+    expect(error.message).toContain("expected number, received null");
+  });
+
+  it("keeps a root-level mismatch readable when the issue has no path", async () => {
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(200, JSON.stringify({ not: "an array" })),
+    });
+
+    const error = (await client
+      .get("/time_entries.json", z.array(z.number()))
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error.message).toContain("expected array, received object");
+    expect(error.message).not.toMatch(/\s:\s/);
+  });
+
+  it("caps the reported issues and says how many it omitted", async () => {
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(200, JSON.stringify(["a", "b", "c", "d", "e"])),
+    });
+
+    const error = (await client
+      .get("/time_entries.json", z.array(z.number()))
+      .catch((e) => e)) as MiteApiError;
+
+    // Five bad items → issues at paths 0..4. The cap names 0-2, so path 3 is
+    // the first one omitted: asserting on it is what actually pins the cap.
+    expect(error.message).toContain("2: ");
+    expect(error.message).not.toContain("3: ");
+    expect(error.message).toContain("(+2 more)");
+  });
+
+  it("names no key or value from the upstream body, even when the body carries one as a key", async () => {
+    const client = new MiteClient({
+      account: "acme",
+      apiKey: "secret-key",
+      fetchFn: respondWith(
+        200,
+        JSON.stringify({ user: { [SENTINEL]: SENTINEL } }),
+      ),
+    });
+    const schema = z.looseObject({ user: z.looseObject({ id: z.number() }) });
+
+    const error = (await client
+      .get("/myself.json", schema)
+      .catch((e) => e)) as MiteApiError;
+
+    expect(error.kind).toBe("shape");
+    expect(error.message).not.toContain(SENTINEL);
+    expect(error.message).toContain("user.id");
+  });
 });
 
 describe("MiteClient error mapping", () => {
